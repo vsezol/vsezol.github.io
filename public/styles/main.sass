@@ -1,0 +1,65 @@
+@import './font_faces/font_faces'
+
+.header
+    // min-height: 100vh
+    background-image: url('../img/header_bg.jpg')
+    .navbar-toggler
+        font-size: 1.6rem
+        border: none
+        transition: all 0.2s ease-in-out
+        &:active, &:focus
+            outline: none
+
+.cover .right-part
+    .image-wrapper
+        img
+            width: 100%
+            height: auto
+
+.cover .left-part .course-datetime
+    .calendar-icon
+        color: red
+        font-size: 2.3rem
+        .datetime-block
+            font-family: 'NunitoRegular'
+            font-size: 1.2rem
+
+.cover .left-part .main-text
+    h2
+        color: white
+        text-transform: uppercase
+        font-family: 'NunitoExtraBold'
+        span
+            background-color: red
+    h1
+        font-family: 'NunitoExtraBold'
+        text-transform: uppercase
+        font-size: 2rem
+    p
+        font-family: 'NunitoRegular'
+        font-size: 1.2rem
+    .for-h1
+        font-family: 'NunitoBold'
+        font-size: 1.3rem
+
+.cover .left-part .choose-btn
+    button
+        font-size: 1.5rem
+        background-color: #FCDB70
+        font-family: 'NunitoBold'
+        box-shadow: 5px 5px 2px 0px rgba(0,0,0,0.75)
+        transition: all 0.35s ease-in-out
+        &:active, &:focus, &:hover
+            box-shadow: none
+    p
+        font-family: 'NunitoRegular'
+        font-size: 1.1rem
+            
+
+
+.navbar
+    background-color: rgba(0, 0, 0, .0)
+    .nav-item
+        font-size: 1.1rem
+        color: #403E3E
+        font-family: 'NunitoBold'

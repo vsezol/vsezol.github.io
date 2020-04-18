@@ -1,24 +1,110 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="Web site created using create-react-app" />
-    <link rel="apple-touch-icon" href="/logo192.png" />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
-    <title>Quizer</title>
-    <link href="/static/css/main.17cb959d.chunk.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Немецкая онлайн школа</title>
+    <link rel="shortcut icon" href="/public/img/logo64.png">
+    <link rel="stylesheet" href="/public/libs/font_awesome/css/all.min.css">
+    <link rel="stylesheet" href="/public/libs/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="/public/styles/main.css">
 </head>
 
-<body><noscript></noscript>
-    <div id="root"></div>
-    <script>!function (e) { function r(r) { for (var n, i, l = r[0], a = r[1], f = r[2], p = 0, s = []; p < l.length; p++)i = l[p], Object.prototype.hasOwnProperty.call(o, i) && o[i] && s.push(o[i][0]), o[i] = 0; for (n in a) Object.prototype.hasOwnProperty.call(a, n) && (e[n] = a[n]); for (c && c(r); s.length;)s.shift()(); return u.push.apply(u, f || []), t() } function t() { for (var e, r = 0; r < u.length; r++) { for (var t = u[r], n = !0, l = 1; l < t.length; l++) { var a = t[l]; 0 !== o[a] && (n = !1) } n && (u.splice(r--, 1), e = i(i.s = t[0])) } return e } var n = {}, o = { 1: 0 }, u = []; function i(r) { if (n[r]) return n[r].exports; var t = n[r] = { i: r, l: !1, exports: {} }; return e[r].call(t.exports, t, t.exports, i), t.l = !0, t.exports } i.m = e, i.c = n, i.d = function (e, r, t) { i.o(e, r) || Object.defineProperty(e, r, { enumerable: !0, get: t }) }, i.r = function (e) { "undefined" != typeof Symbol && Symbol.toStringTag && Object.defineProperty(e, Symbol.toStringTag, { value: "Module" }), Object.defineProperty(e, "__esModule", { value: !0 }) }, i.t = function (e, r) { if (1 & r && (e = i(e)), 8 & r) return e; if (4 & r && "object" == typeof e && e && e.__esModule) return e; var t = Object.create(null); if (i.r(t), Object.defineProperty(t, "default", { enumerable: !0, value: e }), 2 & r && "string" != typeof e) for (var n in e) i.d(t, n, function (r) { return e[r] }.bind(null, n)); return t }, i.n = function (e) { var r = e && e.__esModule ? function () { return e.default } : function () { return e }; return i.d(r, "a", r), r }, i.o = function (e, r) { return Object.prototype.hasOwnProperty.call(e, r) }, i.p = "/"; var l = this["webpackJsonpreact-quiz"] = this["webpackJsonpreact-quiz"] || [], a = l.push.bind(l); l.push = r, l = l.slice(); for (var f = 0; f < l.length; f++)r(l[f]); var c = a; t() }([])</script>
-    <script src="/static/js/2.8c8fc132.chunk.js"></script>
-    <script src="/static/js/main.800d05e1.chunk.js"></script>
+<body>
+    <header class="header">
+        <nav class="navbar navbar-expand-lg navbar-light">
+            <a class="navbar-brand" href="#"><img src="/public/img/logo64.png" alt=""></a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav w-100 d-flex flex-wrap justify-content-around">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Первый блок</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Второй блок</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Третий блок</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Четвертый блок</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Пятый блок</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <div class="container cover-wrapper">
+            <div class="row cover">
+                <div class="col-12 col-lg-6 left-part d-flex flex-column justify-content-around">
+                    <div class="course-datetime mb-3 mb-lg-0">
+                        <div class="d-flex align-items-center">
+                            <div class="calendar-icon pr-2">
+                                <i class="far fa-calendar-alt"></i>
+                            </div>
+                            <div class="datetime-block">
+                                воскресенье, 19 апреля <br />
+                                20:00 Киев / МСК
+                            </div>
+                        </div>
+                    </div>
+                    <div class="main-text">
+                        <h2><strong><span>Первый<span></strong></h2>
+                        <p class="for-h2">Бесплатный онлайн мастер-класс <b>Владимира Яковлева</b></p>
+                        <h1 class="h1 w-100">Продолжение следует</h1>
+                        <p class="for-h1">"Как выйти из жизненного тупика, снова почувствовать ветер в парусах, драйв и
+                            радость
+                            жизни"</p>
+                    </div>
+                    <div class="choose-btn">
+                        <div class="mb-3">
+                            <button class="btn">
+                                Выбрать будущее ребенка
+                            </button>
+                        </div>
+                        <p>
+                            Методическое пособие - результат 20 летних исследований на собственном опыте
+                        </p>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6 right-part">
+                    <div class="image-wrapper">
+                        <img src="/public/img/clever_boy.png" alt="">
+                    </div>
+                    <div class="company-description">
+                        Lorem Lorem Lorem Lorem <br />
+                        Lorem Lorem Lorem Lorem <br />
+                        Lorem Lorem Lorem Lorem <br />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </header>
+
+    <script>
+        const navbarToggler = document.querySelector('.navbar-toggler')
+
+        let navbarTogglerOpen = false
+        navbarToggler.addEventListener('click', () => {
+            navbarTogglerOpen = !navbarTogglerOpen
+            navbarTogglerOpen
+                ? navbarToggler.style.transform = 'rotate(180deg)'
+                : navbarToggler.style.transform = 'rotate(0deg)'
+        })
+    </script>
+
+    <script src="/public/libs/bootstrap/jquery-3.4.1.slim.min.js"></script>
+    <script src="/public/libs/bootstrap/popper.min.js"></script>
+    <script src="/public/libs/bootstrap/bootstrap.min.js"></script>
+    <script src="/public/libs/font_awesome/js/all.min.js"></script>
 </body>
 
 </html>
