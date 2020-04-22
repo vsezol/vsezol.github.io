@@ -1,0 +1,47 @@
+@font-face {
+  font-family: 'NunitoRegular';
+  src: url("../../public/fonts/Nunito/Nunito-Regular.ttf");
+}
+
+@font-face {
+  font-family: 'NunitoBold';
+  src: url("../../public/fonts/Nunito/Nunito-Bold.ttf");
+}
+
+@font-face {
+  font-family: 'NunitoExtraBold';
+  src: url("../../public/fonts/Nunito/Nunito-ExtraBold.ttf");
+}
+
+@-webkit-keyframes button-light {
+  80% {
+    left: 10%;
+    background-color: rgba(255, 255, 255, 0);
+  }
+  82% {
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+  98% {
+    background-color: rgba(255, 255, 255, 0);
+  }
+  100% {
+    left: 130%;
+  }
+}
+
+@keyframes button-light {
+  80% {
+    left: 10%;
+    background-color: rgba(255, 255, 255, 0);
+  }
+  82% {
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+  98% {
+    background-color: rgba(255, 255, 255, 0);
+  }
+  100% {
+    left: 130%;
+  }
+}
+/*# sourceMappingURL=button.css.map */

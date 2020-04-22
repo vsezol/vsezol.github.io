@@ -1,0 +1,11 @@
+@import '../../constants/constants'
+
+@mixin span($color: rgba(0,0,0,0.0), $bgcolor: rgba(0,0,0,0.0))
+    color: $color
+    background-color: $bgcolor
+
+.red-span
+    @include span($color: $def_color_red)
+
+.red-span-bg
+    @include span($color: white, $bgcolor: $def_color_red)

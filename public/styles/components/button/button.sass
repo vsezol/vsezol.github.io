@@ -1,0 +1,58 @@
+@import '../../font_faces/font_faces'
+@import '../../constants/constants'
+
+@mixin button($type: yellow, $text-transform: none)
+    font-size: 1.35rem
+    position: relative
+    text-transform: $text-transform
+    font-family: 'NunitoBold'
+    box-shadow: 0px 5px 5px 0px rgba(0,0,0,0.75)
+    transition: all 0.35s ease-in-out
+
+    &::before
+        content: ''
+        position: absolute
+        top: 0
+        width: 1.5em
+        height: 100%
+        transform: skewX(-45deg)
+        animation: button-light 3s infinite
+
+    &:active, &:focus, &:hover
+        box-shadow: none
+
+    @if $type == yellow
+        background-color: $def_color_yellow
+        color: $def_color_black
+        &:active, &:focus, &:hover
+            background-color: $def_color_yellow
+
+    @if $type == green
+        background-color: $def_color_green
+        color: $def_color_white
+        &:active, &:focus, &:hover
+            background-color: $def_color_green
+
+
+
+@keyframes button-light
+    80%
+        left: 10%
+        background-color: rgba(255, 255, 255, 0.0)
+    82%
+        background-color: rgba(255, 255, 255, 0.9)
+    98%
+        background-color: rgba(255, 255, 255, 0.0s)
+    100%
+        left: 130%
+// @keyframes button-light
+//     0%
+//         left: 10%
+//         background-color: rgba(255, 255, 255, 0.0)
+//     20%
+//         background-color: rgba(255, 255, 255, 0.9)
+//     80%
+//         background-color: rgba(255, 255, 255, 0.0s)
+//     100%
+//         left: 130%
+    

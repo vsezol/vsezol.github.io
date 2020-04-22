@@ -1,0 +1,10 @@
+.red-span {
+  color: #FF0000;
+  background-color: rgba(0, 0, 0, 0);
+}
+
+.red-span-bg {
+  color: white;
+  background-color: #FF0000;
+}
+/*# sourceMappingURL=span.css.map */

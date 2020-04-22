@@ -1,0 +1,10 @@
+{
+    "version": 3,
+    "mappings": "AAMA,AAAA,SAAS,CAAC;EAHN,KAAK,ECHO,OAAO;EDInB,gBAAgB,EAF2B,gBAAe;CAKlB;;AAE5C,AAAA,YAAY,CAAC;EANT,KAAK,EAOiB,KAAK;EAN3B,gBAAgB,ECJJ,OAAO;CDUsC",
+    "sources": [
+        "span.sass",
+        "../../constants/constants.sass"
+    ],
+    "names": [],
+    "file": "span.css"
+}
