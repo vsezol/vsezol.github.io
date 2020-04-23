@@ -1,94 +1,33 @@
-@import './font_faces/font_faces'
-@import './components/button/button'
-@import './components/span/span'
+@import './components/header/header'
 @import './constants/constants'
+@import './font_faces/font_faces'
+@import './components/span/span'
 
-.header
-    box-sizing: border-box
-    background-image: url('../img/header_bg.jpg')
-    .navbar-toggler
-        font-size: 1.6rem
-        border: none
-        transition: all 0.2s ease-in-out
-        &:active, &:focus
-            outline: none
+.advantages
+    .carousel-inner
+        .carousel-item
+            img
+                height: 80vh
+                width: 100vw
+                object-fit: cover
+        .carousel-item-wrapper
+            min-height: 50vh
+        .carousel-caption
+            h3
+                color: $def_color_white
+                font-size: 2rem
+                font-family: 'NunitoExtraBold'
+            ul
+                list-style: none
+                padding: 0
+                li
+                    color: $def_color_white
+                    font-size: 1.2rem
+                    font-family: 'NunitoBold'
+                    padding-bottom: 7px
 
-.navbar
-    background-color: rgba(0, 0, 0, .0)
-    .nav-item
-        font-size: 1.1rem
-        color: #403E3E
-        font-family: 'NunitoBold'
-
-.cover .right-part
-    .image-wrapper
-        img
-            width: 100%
-            height: auto
-    .company-description
-        background-color: $def_color_green
-        border-top-left-radius: 5px
-        border-top-right-radius: 5px
-        h3
-            padding: 0
-            margin: 0
-            color: $def_color_white
-            font-family: 'NunitoExtraBold'
-            font-size: $h3_size
-            font-weight: bolder
-            text-transform: uppercase
-        p
-            padding: 0
-            margin: 0
-            color: $def_color_white
-            font-family: 'NunitoRegular'
-            font-size: $p3_size
-
-.cover .left-part .course-datetime
-    .calendar-icon
-        color: $def_color_red
-        font-size: 2.5rem
-    .datetime-block
-        font-family: 'NunitoRegular'
-        font-size: $p2_size
-        color: $def_color_black
-    .date-label
-        h2
-            padding: 0
-            margin: 0
-            color: $def_color_white
-            font-size: $h2_size
-            text-transform: uppercase
-            font-family: 'NunitoExtraBold'
-        .for-h2
-            padding: 0
-            margin: 0
-            font-family: 'NunitoBold'
-            font-size: $p2_size
-
-.cover .left-part .main-text
-    h1
-        font-family: 'NunitoExtraBold'
-        text-transform: uppercase
-        font-size: $h1_size
-        color: $def_color_green
-    ul
-        list-style: none
-    li, p
-        font-family: 'NunitoRegular'
-        font-size: $p2_size
-        .red-check-square
-            color: $def_color_red
-    .for-h1
-        font-family: 'NunitoBold'
-        font-size: $p1_size
-
-.cover .left-part .choose-btn
-    .reg-btn
-        @include button($type: yellow)
-    .more-btn
-        @include button($type: green)
-    p
-        font-family: 'NunitoRegular'
-        color: $def_color_black
-        font-size: $p3_size
+@media screen and ( min-width: 768px )
+    .carousel-item img
+        height: 60vh!important
+    .carousel-caption ul li
+        font-size: 1.35rem

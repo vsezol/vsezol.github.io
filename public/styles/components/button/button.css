@@ -15,7 +15,7 @@
 
 @-webkit-keyframes button-light {
   80% {
-    left: 10%;
+    left: 5%;
     background-color: rgba(255, 255, 255, 0);
   }
   82% {
@@ -25,13 +25,13 @@
     background-color: rgba(255, 255, 255, 0);
   }
   100% {
-    left: 130%;
+    left: 85%;
   }
 }
 
 @keyframes button-light {
   80% {
-    left: 10%;
+    left: 5%;
     background-color: rgba(255, 255, 255, 0);
   }
   82% {
@@ -41,7 +41,7 @@
     background-color: rgba(255, 255, 255, 0);
   }
   100% {
-    left: 130%;
+    left: 85%;
   }
 }
 /*# sourceMappingURL=button.css.map */

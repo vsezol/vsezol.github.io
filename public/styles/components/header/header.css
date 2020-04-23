@@ -1,5 +1,261 @@
+@font-face {
+  font-family: 'NunitoRegular';
+  src: url("../../public/fonts/Nunito/Nunito-Regular.ttf");
+}
+
+@font-face {
+  font-family: 'NunitoBold';
+  src: url("../../public/fonts/Nunito/Nunito-Bold.ttf");
+}
+
+@font-face {
+  font-family: 'NunitoExtraBold';
+  src: url("../../public/fonts/Nunito/Nunito-ExtraBold.ttf");
+}
+
+@font-face {
+  font-family: 'NunitoRegular';
+  src: url("../../public/fonts/Nunito/Nunito-Regular.ttf");
+}
+
+@font-face {
+  font-family: 'NunitoBold';
+  src: url("../../public/fonts/Nunito/Nunito-Bold.ttf");
+}
+
+@font-face {
+  font-family: 'NunitoExtraBold';
+  src: url("../../public/fonts/Nunito/Nunito-ExtraBold.ttf");
+}
+
+@-webkit-keyframes button-light {
+  80% {
+    left: 5%;
+    background-color: rgba(255, 255, 255, 0);
+  }
+  82% {
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+  98% {
+    background-color: rgba(255, 255, 255, 0);
+  }
+  100% {
+    left: 85%;
+  }
+}
+
+@keyframes button-light {
+  80% {
+    left: 5%;
+    background-color: rgba(255, 255, 255, 0);
+  }
+  82% {
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+  98% {
+    background-color: rgba(255, 255, 255, 0);
+  }
+  100% {
+    left: 85%;
+  }
+}
+
+.red-span {
+  color: #FF0000;
+  background-color: rgba(0, 0, 0, 0);
+}
+
+.blue-span {
+  color: #164A89;
+  background-color: rgba(0, 0, 0, 0);
+}
+
+.red-span-bg {
+  color: #FBFCF7;
+  background-color: #FF0000;
+}
+
+.blue-span-bg {
+  color: #FBFCF7;
+  background-color: #164A89;
+}
+
 .header {
-  background: url("../../../img/logo512.png");
-  min-height: 100vh;
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+  background-image: url("../img/header_bg.jpg");
+}
+
+.header .navbar-toggler {
+  font-size: 1.6rem;
+  border: none;
+  -webkit-transition: all 0.2s ease-in-out;
+  transition: all 0.2s ease-in-out;
+}
+
+.header .navbar-toggler:active, .header .navbar-toggler:focus {
+  outline: none;
+}
+
+.navbar {
+  background-color: rgba(0, 0, 0, 0);
+}
+
+.navbar .nav-item {
+  font-size: 1.1rem;
+  color: #403E3E;
+  font-family: 'NunitoBold';
+}
+
+.cover .right-part .image-wrapper img {
+  width: 100%;
+  height: auto;
+}
+
+.cover .right-part .company-description {
+  background-color: #439A9A;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+}
+
+.cover .right-part .company-description h3 {
+  padding: 0;
+  margin: 0;
+  color: #FBFCF7;
+  font-family: 'NunitoExtraBold';
+  font-size: 1.2rem;
+  font-weight: bolder;
+  text-transform: uppercase;
+}
+
+.cover .right-part .company-description p {
+  padding: 0;
+  margin: 0;
+  color: #FBFCF7;
+  font-family: 'NunitoRegular';
+  font-size: 1.1rem;
+}
+
+.cover .left-part .course-datetime .calendar-icon {
+  color: #FF0000;
+  font-size: 2.5rem;
+}
+
+.cover .left-part .course-datetime .datetime-block {
+  font-family: 'NunitoRegular';
+  font-size: 1.2rem;
+  color: #212529;
+}
+
+.cover .left-part .course-datetime .date-label h2 {
+  padding: 0;
+  margin: 0;
+  color: #FBFCF7;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  font-family: 'NunitoExtraBold';
+}
+
+.cover .left-part .course-datetime .date-label .for-h2 {
+  padding: 0;
+  margin: 0;
+  font-family: 'NunitoBold';
+  font-size: 1.2rem;
+}
+
+.cover .left-part .main-text h1 {
+  font-family: 'NunitoExtraBold';
+  text-transform: uppercase;
+  font-size: 1.8rem;
+  color: #439A9A;
+}
+
+.cover .left-part .main-text ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.cover .left-part .main-text li, .cover .left-part .main-text p {
+  font-family: 'NunitoRegular';
+  font-size: 1.2rem;
+}
+
+.cover .left-part .main-text li .red-check-square, .cover .left-part .main-text p .red-check-square {
+  color: #FF0000;
+}
+
+.cover .left-part .main-text .for-h1 {
+  font-family: 'NunitoBold';
+  font-size: 1.3rem;
+}
+
+.choose-btn .reg-btn {
+  font-size: 1.35rem;
+  position: relative;
+  text-transform: none;
+  font-family: 'NunitoBold';
+  -webkit-box-shadow: 0px 5px 5px 0px rgba(0, 0, 0, 0.75);
+          box-shadow: 0px 5px 5px 0px rgba(0, 0, 0, 0.75);
+  -webkit-transition: all 0.35s ease-in-out;
+  transition: all 0.35s ease-in-out;
+  background-color: #FCED70;
+  color: #212529;
+}
+
+.choose-btn .reg-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 1.2em;
+  height: 100%;
+  z-index: 1000;
+  -webkit-transform: skewX(-45deg);
+          transform: skewX(-45deg);
+  -webkit-animation: button-light 3s infinite;
+          animation: button-light 3s infinite;
+}
+
+.choose-btn .reg-btn:active, .choose-btn .reg-btn:focus, .choose-btn .reg-btn:hover {
+  -webkit-box-shadow: none;
+          box-shadow: none;
+}
+
+.choose-btn .reg-btn:active, .choose-btn .reg-btn:focus, .choose-btn .reg-btn:hover {
+  background-color: #FCED70;
+}
+
+.choose-btn .more-btn {
+  font-size: 1.35rem;
+  position: relative;
+  text-transform: none;
+  font-family: 'NunitoBold';
+  -webkit-box-shadow: 0px 5px 5px 0px rgba(0, 0, 0, 0.75);
+          box-shadow: 0px 5px 5px 0px rgba(0, 0, 0, 0.75);
+  -webkit-transition: all 0.35s ease-in-out;
+  transition: all 0.35s ease-in-out;
+  background-color: #439A9A;
+  color: #FBFCF7;
+}
+
+.choose-btn .more-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 1.2em;
+  height: 100%;
+  z-index: 1000;
+  -webkit-transform: skewX(-45deg);
+          transform: skewX(-45deg);
+  -webkit-animation: button-light 3s infinite;
+          animation: button-light 3s infinite;
+}
+
+.choose-btn .more-btn:active, .choose-btn .more-btn:focus, .choose-btn .more-btn:hover {
+  -webkit-box-shadow: none;
+          box-shadow: none;
+}
+
+.choose-btn .more-btn:active, .choose-btn .more-btn:focus, .choose-btn .more-btn:hover {
+  background-color: #439A9A;
 }
 /*# sourceMappingURL=header.css.map */
