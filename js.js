@@ -25,7 +25,7 @@ fly.src = "fly.mp3";
 score_audio.src = "score.mp3";
 
 function moveUp(){
-    yPos -= 30;
+    yPos -= 15;
     fly.play();
 }
 
@@ -41,7 +41,7 @@ pipe[0] = {
 // позиция птички
 var xPos = 10;
 var yPos = 150;
-var grav = 2;
+var grav = 1;
 var b = 1;
 var score = 0;
 
