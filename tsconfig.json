@@ -1,0 +1,44 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "angularCompilerOptions": {
+    "annotateForClosureCompiler": false,
+    "annotationsAs": "decorators",
+    "disableExpressionLowering": false,
+    "disableTypeScriptVersionCheck": false,
+    "enableIvy": true,
+    "enableResourceInlining": false,
+    "fullTemplateTypeCheck": true,
+    "generateCodeForLibraries": false,
+    "strictInjectionParameters": true,
+    "strictMetadataEmit": false,
+    "strictTemplates": true,
+    "trace": false
+  },
+  "compilerOptions": {
+    "downlevelIteration": true,
+    "esModuleInterop": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "outDir": "./dist/out-tsc",
+    "sourceMap": false,
+    "paths": {
+      "@app/*": ["./src/app/*"],
+      "@environment": ["./src/environments/environment.ts"]
+    },
+    "plugins": [
+      {
+        "name": "@angular/language-service"
+      }
+    ]
+  },
+  "exclude": ["node_modules"],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "CommonJS",
+      "target": "ESNext",
+      "plugins": []
+    }
+  }
+}

@@ -1,0 +1,6 @@
+<pupa-theme-wrapper [theme]="theme$ | async | nonNullable : theme.Light">
+  <div class="app" appThemeSync>
+    <router-outlet></router-outlet>
+  </div>
+</pupa-theme-wrapper>
+<iframe class="iframe-element" #iframe frameborder="0"></iframe>

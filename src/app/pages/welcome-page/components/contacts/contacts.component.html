@@ -1,0 +1,28 @@
+<ng-container *ngFor="let links of contacts; let isLast = last">
+  <div class="links">
+    <a *ngFor="let item of links" [href]="item.link" target="_blank">
+      <pupa-button
+        *ngIf="item.withText"
+        [icon]="item.icon"
+        iconPosition="left"
+        kind="secondary"
+      >
+        {{ item.description }}
+      </pupa-button>
+
+      <pupa-button-icon
+        *ngIf="!item.withText"
+        [icon]="item.icon"
+        kind="secondary"
+        [pupaTooltip]="item.description"
+        [tooltipDisabled]="!item.description"
+      ></pupa-button-icon>
+    </a>
+  </div>
+
+  <div *ngIf="!isLast" class="separator"></div>
+</ng-container>
+
+<ng-template #link let-item="item"> </ng-template>
+
+<ng-template #linkWithText let-item="item"> </ng-template>

@@ -1,0 +1,59 @@
+@use "mixins" as *;
+@use "functions" as *;
+@use "variables" as *;
+@use "font-faces" as *;
+
+* {
+  margin: 0;
+  padding: 0;
+  outline: none !important;
+
+  @include font-type-regular();
+  @include scrollbar();
+  box-sizing: border-box;
+}
+
+html {
+  overflow: hidden;
+  width: 100%;
+  font-size: 4px;
+}
+
+body {
+  height: 100%;
+  width: 100%;
+
+  margin: 0;
+
+  @include font-preset-body-m();
+}
+
+h1 {
+  @include font-preset-h1();
+  padding: 0;
+  margin: 0;
+}
+
+h2 {
+  @include font-preset-h2();
+  padding: 0;
+  margin: 0;
+}
+
+h3 {
+  @include font-preset-h3();
+  padding: 0;
+  margin: 0;
+}
+
+h4 {
+  @include font-preset-h4();
+  padding: 0;
+  margin: 0;
+}
+
+h5 {
+  @include font-preset-h5();
+  padding: 0;
+  margin: 0;
+}

@@ -1,0 +1,30 @@
+<div class="page">
+  <div class="page__wrapper">
+    <pupa-card-container>
+      <section class="intro">
+        <pupa-card-cover class="intro__cover">
+          <div class="intro__image-wrapper">
+            <img class="intro__image" [src]="avatarSrc" alt="My avatar" />
+          </div>
+        </pupa-card-cover>
+
+        <pupa-card-header>
+          <pupa-card-title>
+            <h1 class="intro__title">Vsevolod Zolotov</h1>
+          </pupa-card-title>
+          <div>
+            <p>{{ currentGreeting }}</p>
+            <p>
+              I am a Senior Software Engineer focusing on responsive and
+              high-availability applications.
+            </p>
+          </div>
+        </pupa-card-header>
+      </section>
+
+      <section class="contacts">
+        <app-contacts [contacts]="contacts"></app-contacts>
+      </section>
+    </pupa-card-container>
+  </div>
+</div>

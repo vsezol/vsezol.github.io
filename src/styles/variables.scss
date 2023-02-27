@@ -1,0 +1,11 @@
+@use "@bimeister/pupakit.common/styles/variables/index" as *;
+@forward "@bimeister/pupakit.common/styles/variables/index";
+
+$card-width: 12rem;
+$card-height: 18rem;
+$card-width-xs: 10rem;
+$card-height-xs: 14rem;
+$card-border-width: 0.5rem;
+$card-border-radius: 1rem;
+
+$navbar-height: 16rem;
