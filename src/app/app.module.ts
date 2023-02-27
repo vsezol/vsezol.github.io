@@ -3,6 +3,7 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterModule } from '@angular/router';
+import { ScullyLibModule } from '@scullyio/ng-lib';
 import { AppComponent } from './app.component';
 import { appRoutes } from './app.routes';
 import { ThemeSyncDirective } from './directives/theme-controller.directive';
@@ -17,6 +18,7 @@ import { SharedModule } from './shared/shared.module';
     BrowserAnimationsModule,
     HttpClientModule,
     RouterModule.forRoot(appRoutes),
+    ScullyLibModule,
   ],
   bootstrap: [AppComponent],
 })

@@ -1,0 +1,11 @@
+identifier: lfeamcwdq0y4l6t5
+appPort: 1864
+staticPort: 1668
+reloadPort: 2667
+hostName: localhost
+projectName: vsezol
+homeFolder: /Users/vsezol/pet/vsezol.github.io
+distFolder: ./dist/vsezol
+outDir: /Users/vsezol/pet/vsezol.github.io/dist/static
+handle404: ""
+allowErrorCollect: false
