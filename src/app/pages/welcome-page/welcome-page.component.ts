@@ -13,11 +13,13 @@ const CONTACT_LINKS: ContactLink[][] = [
       icon: 'logo-tg',
       link: 'https://t.me/vsezold',
       description: 'Telegram',
+      ariaLabel: 'Link to my Telegram profile',
     },
     {
       icon: 'ios-mail',
       link: 'mailto:vsezold@gmail.com',
       description: 'Mail',
+      ariaLabel: 'Click to write me email',
     },
   ],
   [
@@ -25,6 +27,7 @@ const CONTACT_LINKS: ContactLink[][] = [
       icon: 'logo-github',
       link: 'https://github.com/vsezol',
       description: 'Github',
+      ariaLabel: 'Link to my Github profile',
     },
   ],
   [
@@ -32,16 +35,19 @@ const CONTACT_LINKS: ContactLink[][] = [
       icon: 'logo-instagram',
       link: 'https://www.instagram.com/vsezol',
       description: 'Instagram',
+      ariaLabel: 'Link to Instagram profile',
     },
     {
       icon: 'logo-vk',
       link: 'https://vk.com/vsezol',
+      ariaLabel: 'Link to my VK profile',
     },
     {
       icon: 'ios-paper',
       link: 'https://t.me/lifeindev',
       description: 'My channel',
       withText: true,
+      ariaLabel: 'Link to my channel in Telegram',
     },
   ],
 ];

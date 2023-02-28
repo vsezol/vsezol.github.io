@@ -3,4 +3,5 @@ export interface ContactLink {
   icon: string;
   description?: string;
   withText?: boolean;
+  ariaLabel: string;
 }
