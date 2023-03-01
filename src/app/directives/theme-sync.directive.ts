@@ -44,8 +44,10 @@ export class ThemeSyncDirective implements OnDestroy {
   }
 
   private getPreferredTheme(): Theme {
-    if (Object.hasOwn(this.window, 'mathMedia')) {
-      return Theme.Light;
+    const hasMatchMedia: boolean = Object.hasOwn(this.window, 'matchMedia');
+
+    if (!hasMatchMedia) {
+      return Theme.Dark;
     }
 
     const isDark: boolean = this.window.matchMedia(

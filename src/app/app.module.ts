@@ -6,7 +6,7 @@ import { RouterModule } from '@angular/router';
 import { ScullyLibModule } from '@scullyio/ng-lib';
 import { AppComponent } from './app.component';
 import { appRoutes } from './app.routes';
-import { ThemeSyncDirective } from './directives/theme-controller.directive';
+import { ThemeSyncDirective } from './directives/theme-sync.directive';
 import { SharedModule } from './shared/shared.module';
 
 @NgModule({
