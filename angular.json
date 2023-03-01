@@ -23,15 +23,7 @@
             "polyfills": "src/polyfills.ts",
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
-            "assets": [
-              "src/favicon.ico",
-              "src/assets",
-              {
-                "glob": "**/*",
-                "input": "node_modules/@bimeister/pupakit/assets",
-                "output": "assets"
-              }
-            ],
+            "assets": ["src/favicon.ico", "src/assets"],
             "stylePreprocessorOptions": {
               "includePaths": ["src/styles", "node_modules"]
             },

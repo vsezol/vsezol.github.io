@@ -1,7 +1,5 @@
 @use "variables" as *;
 @use "functions" as *;
-@use "mixins" as *;
-@use "font-faces" as *;
 
 .app {
   background: semantic-color(surface-primary);
