@@ -29,6 +29,12 @@ const CONTACT_LINKS: ContactLink[][] = [
       description: 'Github',
       ariaLabel: 'Link to my Github profile',
     },
+    {
+      icon: 'logo-linkedin',
+      link: 'https://www.linkedin.com/in/vsezol',
+      description: 'LinkedIn',
+      ariaLabel: 'Link to my LinkedIn profile',
+    },
   ],
   [
     {
@@ -40,6 +46,7 @@ const CONTACT_LINKS: ContactLink[][] = [
     {
       icon: 'logo-vk',
       link: 'https://vk.com/vsezol',
+      description: 'VK',
       ariaLabel: 'Link to my VK profile',
     },
     {

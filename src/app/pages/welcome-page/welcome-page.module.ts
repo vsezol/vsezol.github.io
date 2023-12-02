@@ -4,12 +4,13 @@ import { RouterModule } from '@angular/router';
 import { logoTgIcon } from '@app/declarations/constants/icons/logo-tg.icon';
 import { SharedModule } from '@app/shared/shared.module';
 import {
+  PupaIconsModule,
   iosMailIcon,
   iosPaperIcon,
   logoGithubIcon,
   logoInstagramIcon,
+  logoLinkedinIcon,
   logoVkIcon,
-  PupaIconsModule,
 } from '@bimeister/pupakit.icons';
 import { ContactsComponent } from './components/contacts/contacts.component';
 import { WelcomePageComponent } from './welcome-page.component';
@@ -28,6 +29,7 @@ import { welcomePageRoutes } from './welcome-page.routes';
       iosMailIcon,
       logoInstagramIcon,
       iosPaperIcon,
+      logoLinkedinIcon,
     ]),
   ],
 })
