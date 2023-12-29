@@ -1,6 +1,6 @@
 <pupa-theme-wrapper [theme]="theme$ | async | nonNullable : theme.Dark">
   <div class="app" appThemeSync>
-    <router-outlet></router-outlet>
+    <app-welcome-page></app-welcome-page>
   </div>
 </pupa-theme-wrapper>
 <iframe class="iframe-element" #iframe frameborder="0"></iframe>

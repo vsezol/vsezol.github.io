@@ -1,28 +1,27 @@
 @use "mixins" as *;
 
-* {
-  margin: 0;
-  padding: 0;
-  outline: none !important;
-
-  @include font-type-regular();
-  @include scrollbar();
-  box-sizing: border-box;
-}
-
 html {
   overflow: hidden;
   width: 100%;
   font-size: 4px;
+
+  @include light-theme-class-parent() {
+    @include apply-light-theme();
+  }
+
+  @include dark-theme-class-parent() {
+    @include apply-dark-theme();
+  }
 }
 
 body {
-  height: 100%;
-  width: 100%;
-
-  margin: 0;
-
+  font-size: 4rem;
+  line-height: 6rem;
   @include font-preset-body-m();
+  padding: 0;
+  margin: 0;
+  overscroll-behavior: none;
+  position: relative;
 }
 
 h1 {
@@ -53,4 +52,9 @@ h5 {
   @include font-preset-h5();
   padding: 0;
   margin: 0;
+}
+
+p {
+  margin: 0;
+  padding: 0;
 }

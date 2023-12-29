@@ -1,13 +1,4 @@
-import { enableProdMode } from '@angular/core';
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
-import { AppModule } from './app/app.module';
-import { environment } from './environments/environment';
-
-if (environment.production) {
-  enableProdMode();
-}
-
-platformBrowserDynamic()
-  .bootstrapModule(AppModule)
+import('./bootstrap').catch((err: Error) => {
   // eslint-disable-next-line no-console
-  .catch((err: Error) => console.error(err));
+  console.error(err);
+});

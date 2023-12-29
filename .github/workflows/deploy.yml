@@ -47,13 +47,10 @@ jobs:
         uses: ./.github/actions/with-cached-workspace
 
       - name: Building
-        run: npm run build
-
-      - name: Building static
-        run: npm run build:static
+        run: npm run build:prod
 
       - name: Deploying to github pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: dist/static
+          folder: dist
           token: ${{ secrets.TOKEN }}

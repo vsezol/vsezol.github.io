@@ -1,11 +1,13 @@
+import { NgOptimizedImage } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   ViewEncapsulation,
 } from '@angular/core';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ContactLink } from '@app/declarations/interfaces/contact-link.interface';
 import { getCurrentGreeting } from '@app/functions/common/get-current-greeting.function';
+import { PupaCardModule } from '@bimeister/pupakit.kit';
+import { ContactsModule } from './components/contacts/contacts.module';
 
 const CONTACT_LINKS: ContactLink[][] = [
   [
@@ -65,17 +67,11 @@ const CONTACT_LINKS: ContactLink[][] = [
   styleUrls: ['./welcome-page.component.scss'],
   encapsulation: ViewEncapsulation.Emulated,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
+  imports: [ContactsModule, PupaCardModule, NgOptimizedImage],
 })
 export class WelcomePageComponent {
   public readonly contacts: ContactLink[][] = CONTACT_LINKS;
 
-  public readonly avatarSrc: SafeResourceUrl;
-
   public readonly currentGreeting: string = getCurrentGreeting();
-
-  constructor(sanitizer: DomSanitizer) {
-    this.avatarSrc = sanitizer.bypassSecurityTrustResourceUrl(
-      'assets/my-avatar.webp'
-    );
-  }
 }
