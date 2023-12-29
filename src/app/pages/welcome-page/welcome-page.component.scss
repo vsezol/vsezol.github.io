@@ -20,6 +20,18 @@
   );
 }
 
+.page {
+  position: relative;
+}
+
+.snowflake {
+  position: absolute;
+  top: -30rem;
+  left: 50%;
+  transform: translateX(-10rem);
+  will-change: transform;
+}
+
 .intro {
   display: flex;
   padding: 4rem;

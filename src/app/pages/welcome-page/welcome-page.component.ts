@@ -5,6 +5,7 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import { ContactLink } from '@app/declarations/interfaces/contact-link.interface';
+import { SnowflakeComponent } from '@app/features/snowflake/snowflake.component';
 import { getCurrentGreeting } from '@app/functions/common/get-current-greeting.function';
 import { PupaCardModule } from '@bimeister/pupakit.kit';
 import { ContactsModule } from './components/contacts/contacts.module';
@@ -68,7 +69,12 @@ const CONTACT_LINKS: ContactLink[][] = [
   encapsulation: ViewEncapsulation.Emulated,
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [ContactsModule, PupaCardModule, NgOptimizedImage],
+  imports: [
+    ContactsModule,
+    PupaCardModule,
+    NgOptimizedImage,
+    SnowflakeComponent,
+  ],
 })
 export class WelcomePageComponent {
   public readonly contacts: ContactLink[][] = CONTACT_LINKS;

@@ -1,0 +1,65 @@
+@use "functions" as *;
+@use "mixins" as *;
+
+.snowflake {
+  box-sizing: border-box;
+
+  position: absolute;
+  top: 0%;
+  left: 0%;
+
+  font-size: 20rem;
+  line-height: 20rem;
+  height: 20rem;
+  width: 20rem;
+
+  text-align: center;
+  font-weight: bold;
+
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  -webkit-tap-highlight-color: transparent;
+
+  color: semantic-color(kind-primary-normal);
+
+  @include hover {
+    color: semantic-color(kind-primary-hover);
+  }
+}
+
+.snowflake_main {
+  transform: scale(var(--snowflake-scale)) rotate(var(--snowflake-rotation));
+  transition: transform 0.5s;
+}
+
+.snowflake_small {
+  font-size: 10rem;
+  line-height: 10rem;
+  height: 10rem;
+  width: 10rem;
+  color: var(--snowflake-color);
+
+  @include hover {
+    color: var(--snowflake-color);
+  }
+}
+
+.snowflake_falling {
+  animation: snowfall 1s ease-in-out;
+}
+
+.snowflake:active,
+.snowflake:focus {
+  color: semantic-color(kind-primary-active);
+}
+
+@keyframes snowfall {
+  0% {
+    transform: translate(5rem, 5rem);
+  }
+
+  100% {
+    transform: translate(var(--snowflake-x), var(--snowflake-y)) rotate(360deg);
+  }
+}
