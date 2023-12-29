@@ -117,7 +117,7 @@ export class SnowflakeComponent implements AfterViewInit {
 
   private createSnowflake(x: number, y: number, zIndex: number): HTMLElement {
     const element: HTMLElement = this.renderer.createElement('div');
-    const text: Element = this.renderer.createText('❄');
+    const text: Element = this.renderer.createText('❅');
     this.renderer.appendChild(element, text);
 
     this.renderer.setStyle(element, 'top', this.startTop);
