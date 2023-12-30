@@ -2,7 +2,7 @@
   #element
   (click)="handleClick()"
   [style.--snowflake-scale]="snowflakeScale"
-  [style.--snowflake-rotation]="snowflakeRotation"
+  style.--snowflake-rotation="{{ snowflakeRotation }}deg"
   class="snowflake snowflake_main"
 >
   ❅

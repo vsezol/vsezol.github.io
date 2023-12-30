@@ -1,51 +1,59 @@
+import { DOCUMENT } from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   ElementRef,
+  Inject,
+  OnDestroy,
   Renderer2,
   ViewChild,
-  ViewEncapsulation,
 } from '@angular/core';
-import { isNil } from '@bimeister/utilities';
-import { Subject, debounceTime, filter, tap } from 'rxjs';
+import { WINDOW } from '@app/declarations/constants/tokens/window.token';
+import { Repeated, isNil } from '@bimeister/utilities';
+import { Subject, debounceTime, filter, takeUntil, tap } from 'rxjs';
 
 const MAX_CLICKS_COUNT: number = 5;
 const SCALE_FACTOR: number = 5;
-const ROTATION_FACTOR: number = 5;
+const ROTATION_FACTOR: number = 15;
 const SNOWFLAKES_PER_WAVE: number = 150;
 const WAVE_DELAY: number = 100;
 const WAIT_TIME: number = 1500;
+const ANIMATION_DELAY: number = 1000;
+
+type Snowflake = [...Repeated<number, 3>, string];
+type Wave = Snowflake[];
 
 @Component({
   selector: 'app-snowflake',
   templateUrl: './snowflake.component.html',
   styleUrls: ['./snowflake.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  encapsulation: ViewEncapsulation.None,
   standalone: true,
 })
-export class SnowflakeComponent implements AfterViewInit {
+export class SnowflakeComponent implements AfterViewInit, OnDestroy {
   @ViewChild('element', { read: ElementRef })
-  public readonly snowflakeElement: ElementRef | undefined;
+  private readonly snowflakeElement: ElementRef | undefined;
 
-  public clicksCount: number = 0;
+  private readonly clicks$: Subject<void> = new Subject();
 
-  public clicks$: Subject<void> = new Subject();
+  private readonly destroy$: Subject<void> = new Subject();
+
+  private clicksCount: number = 0;
 
   public get snowflakeScale(): number {
     return 1 + this.clicksCount / SCALE_FACTOR;
   }
 
-  public get snowflakeRotation(): string {
+  public get snowflakeRotation(): number {
     if (this.clicksCount === 0) {
-      return '0deg';
+      return 0;
     }
 
     const value: number = ROTATION_FACTOR * this.snowflakeScale;
 
-    return this.clicksCount % 2 === 0 ? `${value}deg` : `-${value}deg`;
+    return this.clicksCount % 2 === 0 ? value : -value;
   }
 
   private snowflakeRect: DOMRect | undefined;
@@ -60,10 +68,38 @@ export class SnowflakeComponent implements AfterViewInit {
 
   constructor(
     private readonly renderer: Renderer2,
-    private readonly changeDetectorRef: ChangeDetectorRef
-  ) {
+    private readonly changeDetectorRef: ChangeDetectorRef,
+    @Inject(WINDOW) private readonly window: Window,
+    @Inject(DOCUMENT) private readonly document: Document
+  ) {}
+
+  public ngAfterViewInit(): void {
+    this.ejectSnowflakesByClicks();
+
+    this.snowflakeRect =
+      this.snowflakeElement?.nativeElement.getBoundingClientRect();
+  }
+
+  public ngOnDestroy(): void {
+    this.clicks$.complete();
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  public handleClick(): void {
+    this.clicks$.next();
+  }
+
+  public ejectSnowflakes(): void {
+    this.spawnWaves(this.clicksCount);
+    this.clicksCount = 0;
+    this.changeDetectorRef.markForCheck();
+  }
+
+  private ejectSnowflakesByClicks(): void {
     this.clicks$
       .pipe(
+        takeUntil(this.destroy$),
         tap(() => {
           this.clicksCount++;
 
@@ -79,46 +115,41 @@ export class SnowflakeComponent implements AfterViewInit {
       });
   }
 
-  public ngAfterViewInit(): void {
-    this.snowflakeRect =
-      this.snowflakeElement?.nativeElement.getBoundingClientRect();
-  }
-
-  public handleClick(): void {
-    this.clicks$.next();
-  }
-
-  public ejectSnowflakes(): void {
-    this.spawnWaves(this.clicksCount);
-    this.clicksCount = 0;
-    this.changeDetectorRef.markForCheck();
-  }
-
   private spawnWaves(count: number): void {
+    const waves: Wave[] = this.getWaves(count);
+
     for (let i: number = 0; i < count; i++) {
       setTimeout(() => {
-        this.spawnWave(i);
+        this.spawnWave(waves[i]);
       }, i * WAVE_DELAY);
     }
   }
 
-  private spawnWave(index: number): void {
+  private spawnWave(wave: Wave): void {
     if (isNil(this.snowflakeRect)) {
       return;
     }
 
+    const elements: HTMLElement[] = [];
+    const fragment: DocumentFragment = this.document.createDocumentFragment();
+
     for (let i: number = 0; i < SNOWFLAKES_PER_WAVE; i++) {
-      this.renderer.appendChild(
-        document.body,
-        this.createSnowflake(this.getRandomX(), this.getRandomY(), index)
-      );
+      const element: HTMLElement = this.createSnowflake(wave[i]);
+
+      elements.push(element);
+      this.renderer.appendChild(fragment, element);
     }
+
+    this.renderer.appendChild(this.document.body, fragment);
+
+    setTimeout(() => {
+      elements.forEach((el: HTMLElement) => el.remove());
+    }, ANIMATION_DELAY);
   }
 
-  private createSnowflake(x: number, y: number, zIndex: number): HTMLElement {
+  private createSnowflake([x, y, zIndex, color]: Snowflake): HTMLElement {
     const element: HTMLElement = this.renderer.createElement('div');
-    const text: Element = this.renderer.createText('❅');
-    this.renderer.appendChild(element, text);
+    element.innerText = '❅';
 
     this.renderer.setStyle(element, 'top', this.startTop);
     this.renderer.setStyle(element, 'left', this.startLeft);
@@ -129,13 +160,24 @@ export class SnowflakeComponent implements AfterViewInit {
 
     element.style.setProperty('--snowflake-x', `${x}px`);
     element.style.setProperty('--snowflake-y', `${y}px`);
-    element.style.setProperty('--snowflake-color', this.getRandomColor());
-
-    setTimeout(() => {
-      element.remove();
-    }, 1000);
+    element.style.setProperty('--snowflake-color', color);
 
     return element;
+  }
+
+  private getWaves(count: number): Wave[] {
+    return Array.from({ length: count }, (_: unknown, index: number) =>
+      this.getWave((1 + index) * 10)
+    );
+  }
+
+  private getWave(zIndex: number): Wave {
+    return Array.from({ length: SNOWFLAKES_PER_WAVE }, () => [
+      this.getRandomX(),
+      this.getRandomY(),
+      zIndex,
+      this.getRandomColor(),
+    ]);
   }
 
   private getRandomColor(): string {
@@ -143,7 +185,9 @@ export class SnowflakeComponent implements AfterViewInit {
   }
 
   private getRandomX(): number {
-    return Math.random() * window.innerWidth - 0.5 * window.innerWidth;
+    return (
+      Math.random() * this.window.innerWidth - 0.5 * this.window.innerWidth
+    );
   }
 
   private getRandomY(): number {
@@ -151,7 +195,7 @@ export class SnowflakeComponent implements AfterViewInit {
       return 0;
     }
 
-    const height: number = window.innerHeight;
+    const height: number = this.window.innerHeight;
 
     return Math.random() * height - 0.5 * height + this.snowflakeRect.y;
   }

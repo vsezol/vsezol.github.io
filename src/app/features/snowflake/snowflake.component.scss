@@ -31,6 +31,7 @@
 .snowflake_main {
   transform: scale(var(--snowflake-scale)) rotate(var(--snowflake-rotation));
   transition: transform 0.5s;
+  animation: spin 1.2s;
 }
 
 .snowflake_small {
@@ -52,6 +53,28 @@
 .snowflake:active,
 .snowflake:focus {
   color: semantic-color(kind-primary-active);
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(-45deg) scale(1.2);
+  }
+
+  50% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  75% {
+    transform: rotate(45deg) scale(1.2);
+  }
+
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
 }
 
 @keyframes snowfall {
