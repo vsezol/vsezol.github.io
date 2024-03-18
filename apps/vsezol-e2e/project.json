@@ -1,0 +1,8 @@
+{
+  "name": "vsezol-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/vsezol-e2e/src",
+  "implicitDependencies": ["vsezol"],
+  "// targets": "to see all targets run: nx show project vsezol-e2e --web",
+  "targets": {}
+}
