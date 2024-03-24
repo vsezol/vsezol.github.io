@@ -1,9 +1,9 @@
-import { Button } from '../shared/ui';
+import { WelcomeCard } from '../widgets';
 
 export default function Index() {
   return (
-    <>
-      <Button>CLICK CLACK</Button>
-    </>
+    <div className="container mx-auto flex items-center justify-center h-full">
+      <WelcomeCard></WelcomeCard>
+    </div>
   );
 }
