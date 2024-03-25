@@ -1,6 +1,6 @@
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 
-interface ContactLink {
+export interface ContactLink {
   icon: IconProp;
   link: string;
   description: string;
@@ -8,9 +8,13 @@ interface ContactLink {
   withText?: boolean;
 }
 
-// font awesome!
-export const CONTACT_LINKS: ContactLink[][] = [
-  [
+export type ContactLinkGroups = Record<
+  'messenger' | 'work' | 'lifestyle',
+  ContactLink[]
+>;
+
+export const CONTACT_LINK_GROUPS: ContactLinkGroups = {
+  messenger: [
     {
       icon: ['fab', 'telegram'],
       link: 'https://t.me/vsezold',
@@ -24,7 +28,7 @@ export const CONTACT_LINKS: ContactLink[][] = [
       ariaLabel: 'Click to write me email',
     },
   ],
-  [
+  work: [
     {
       icon: ['fab', 'github'],
       link: 'https://github.com/vsezol',
@@ -38,7 +42,7 @@ export const CONTACT_LINKS: ContactLink[][] = [
       ariaLabel: 'Link to my LinkedIn profile',
     },
   ],
-  [
+  lifestyle: [
     {
       icon: ['fab', 'instagram'],
       link: 'https://www.instagram.com/vsezol',
@@ -59,4 +63,4 @@ export const CONTACT_LINKS: ContactLink[][] = [
       ariaLabel: 'Link to my channel in Telegram',
     },
   ],
-];
+};

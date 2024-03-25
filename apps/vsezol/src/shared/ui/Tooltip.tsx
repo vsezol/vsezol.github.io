@@ -8,7 +8,7 @@ export type TooltipProps = {
 export const Tooltip = ({ children, text, disabled = false }: TooltipProps) => {
   return (
     <div
-      className="tooltip tooltip-bottom tooltip-primary"
+      className="tooltip tooltip-bottom tooltip-base-content"
       data-tip={!disabled ? text : undefined}
     >
       {children}

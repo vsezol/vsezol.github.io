@@ -1,0 +1,18 @@
+.bg-rainbow {
+  --angle: 0deg;
+  background: linear-gradient(var(--angle), #12c2e9, #c471ed, #f64f59);
+  animation: 3s rotate linear infinite;
+  background-size: 300% 300%;
+}
+
+@keyframes rotate {
+  to {
+    --angle: 360deg;
+  }
+}
+
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
