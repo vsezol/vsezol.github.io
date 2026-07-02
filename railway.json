@@ -3,7 +3,7 @@
   "build": {
     "builder": "DOCKERFILE",
     "dockerfilePath": "backend/Dockerfile",
-    "watchPatterns": ["/backend/**", "/frontend/**"]
+    "watchPatterns": ["/backend/**"]
   },
   "deploy": {
     "healthcheckPath": "/healthz",

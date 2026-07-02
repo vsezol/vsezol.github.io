@@ -12,10 +12,7 @@ from pydantic_ai.messages import (
 )
 from pydantic_ai.usage import UsageLimits
 
-from fastapi.staticfiles import StaticFiles
-
 from .admin import router as admin_router
-from .admin import static_site_dir
 from .admin_config import store
 from .agent import AgentDeps, AskConfirm, AskDateTime, AskEmail, agent
 from .config import settings
@@ -44,12 +41,6 @@ app.add_middleware(
 )
 
 app.include_router(admin_router)
-
-# JS/CSS of the admin React app (the page itself is auth-gated, assets are
-# just static code)
-_site = static_site_dir()
-if _site is not None and (_site / "assets").is_dir():
-    app.mount("/assets", StaticFiles(directory=_site / "assets"), name="assets")
 
 rate_limiter = RateLimiter(
     settings.rate_limit_requests, settings.rate_limit_window_seconds
