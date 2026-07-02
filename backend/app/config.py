@@ -24,7 +24,10 @@ class Settings(BaseSettings):
     # Local development only — never enable in production.
     demo_mode: bool = False
 
-    cors_origins: str = "https://vsezol.github.io,http://localhost:5173"
+    cors_origins: str = (
+        "https://vsezol.com,https://www.vsezol.com,"
+        "https://vsezol.github.io,http://localhost:5173"
+    )
 
     rate_limit_requests: int = 30
     rate_limit_window_seconds: int = 300
