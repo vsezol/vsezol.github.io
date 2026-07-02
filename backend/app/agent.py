@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, ModelRetry, RunContext
 from pydantic_ai.models.fallback import FallbackModel
+from pydantic_ai.models.google import GoogleModelSettings
 
 from .calendar_service import BookingResult, create_meeting, is_slot_free
 from .config import settings
@@ -129,6 +130,11 @@ agent = Agent(
     output_type=[str, AskEmail, AskDateTime, AskConfirm],
     retries=2,
     instructions=SYSTEM_PROMPT,
+    # Latency matters more than deep reasoning here; Gemini flash models
+    # think by default — turn it off. Ignored by non-Google models.
+    model_settings=GoogleModelSettings(
+        google_thinking_config={"thinking_budget": 0}
+    ),
 )
 
 
