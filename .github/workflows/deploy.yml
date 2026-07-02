@@ -41,4 +41,3 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: frontend/dist
-          token: ${{ secrets.TOKEN }}
