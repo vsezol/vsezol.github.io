@@ -38,10 +38,19 @@ def _calendar_service():
 
 
 def is_slot_free(start: datetime, duration_minutes: int) -> bool:
-    """Check the owner's primary calendar via the FreeBusy API."""
+    """Check availability via the FreeBusy API.
+
+    Queries the authorized account's primary calendar and, when the backend
+    runs under a dedicated bot account, the owner's calendar too (visible if
+    the owner shared at least free/busy with the bot). Calendars the bot
+    can't read are skipped.
+    """
     if settings.demo_mode:
         return True
     end = start + timedelta(minutes=duration_minutes)
+    ids = ["primary"]
+    if settings.owner_email:
+        ids.append(settings.owner_email)
     service = _calendar_service()
     response = (
         service.freebusy()
@@ -49,13 +58,17 @@ def is_slot_free(start: datetime, duration_minutes: int) -> bool:
             body={
                 "timeMin": start.isoformat(),
                 "timeMax": end.isoformat(),
-                "items": [{"id": "primary"}],
+                "items": [{"id": i} for i in ids],
             }
         )
         .execute()
     )
-    busy = response["calendars"]["primary"].get("busy", [])
-    return len(busy) == 0
+    for calendar in response.get("calendars", {}).values():
+        if calendar.get("errors"):
+            continue  # not shared with the bot — can't see it, skip
+        if calendar.get("busy"):
+            return False
+    return True
 
 
 def create_meeting(
@@ -66,9 +79,11 @@ def create_meeting(
 ) -> BookingResult:
     """Create a calendar event with a Google Meet link.
 
-    The owner is the organizer, so the event lands in his calendar; the
-    visitor is an attendee and `sendUpdates="all"` emails the invitation
-    (with the Meet link) to both parties.
+    The authorized account is the organizer; the visitor and the owner are
+    attendees, and `sendUpdates="all"` emails the invitation (with the Meet
+    link) to everyone. When the backend runs under a dedicated bot account
+    (e.g. because the owner's account is under Advanced Protection), the
+    owner still receives the invite and the event in his calendar.
     """
     end = start + timedelta(minutes=duration_minutes)
 
@@ -94,7 +109,8 @@ def create_meeting(
         ),
         "start": {"dateTime": start.isoformat()},
         "end": {"dateTime": end.isoformat()},
-        "attendees": [{"email": visitor_email}],
+        "attendees": [{"email": visitor_email}]
+        + ([{"email": settings.owner_email}] if settings.owner_email else []),
         "conferenceData": {
             "createRequest": {
                 "requestId": uuid.uuid4().hex,
