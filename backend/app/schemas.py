@@ -27,6 +27,14 @@ class AskDateTimeReply(BaseModel):
     duration_minutes: int = 30
 
 
+class AskConfirmReply(BaseModel):
+    type: Literal["ask_confirm"] = "ask_confirm"
+    message: str
+    start: str
+    duration_minutes: int = 30
+    email: str
+
+
 class BookedReply(BaseModel):
     type: Literal["booked"] = "booked"
     message: str
@@ -37,7 +45,9 @@ class BookedReply(BaseModel):
 
 
 Reply = Annotated[
-    Union[TextReply, AskEmailReply, AskDateTimeReply, BookedReply],
+    Union[
+        TextReply, AskEmailReply, AskDateTimeReply, AskConfirmReply, BookedReply
+    ],
     Field(discriminator="type"),
 ]
 

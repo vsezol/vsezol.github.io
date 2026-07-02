@@ -8,6 +8,13 @@ export type AgentReply =
       duration_minutes: number;
     }
   | {
+      type: 'ask_confirm';
+      message: string;
+      start: string;
+      duration_minutes: number;
+      email: string;
+    }
+  | {
       type: 'booked';
       message: string;
       meet_url: string;
@@ -22,26 +29,33 @@ export interface ChatResponse {
 }
 
 export type ChatItem =
+  | { kind: 'intro'; id: string }
+  | { kind: 'chips'; id: string }
   | { kind: 'text'; id: string; role: 'user' | 'agent'; text: string }
   | {
       kind: 'email_widget';
       id: string;
-      prompt: string;
       prefill: string | null;
-      resolved: boolean;
+      resolved: string | null;
     }
   | {
       kind: 'datetime_widget';
       id: string;
-      prompt: string;
       prefillStart: string | null;
       durationMinutes: number;
-      resolved: boolean;
+      resolved: string | null;
     }
   | {
-      kind: 'booking';
+      kind: 'confirm_widget';
       id: string;
-      message: string;
+      start: string;
+      durationMinutes: number;
+      email: string;
+      resolved: string | null;
+    }
+  | {
+      kind: 'success';
+      id: string;
       meetUrl: string;
       start: string;
       end: string;

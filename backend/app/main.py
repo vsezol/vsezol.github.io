@@ -8,10 +8,11 @@ from pydantic import ValidationError
 from pydantic_ai.messages import ModelMessagesTypeAdapter
 from pydantic_ai.usage import UsageLimits
 
-from .agent import AgentDeps, AskDateTime, AskEmail, agent
+from .agent import AgentDeps, AskConfirm, AskDateTime, AskEmail, agent
 from .config import settings
 from .rate_limit import RateLimiter
 from .schemas import (
+    AskConfirmReply,
     AskDateTimeReply,
     AskEmailReply,
     BookedReply,
@@ -67,7 +68,9 @@ def _validate_timezone(tz: str | None) -> str:
     return tz
 
 
-def _build_reply(output: str | AskEmail | AskDateTime, deps: AgentDeps) -> Reply:
+def _build_reply(
+    output: str | AskEmail | AskDateTime | AskConfirm, deps: AgentDeps
+) -> Reply:
     if deps.booking is not None:
         booking = deps.booking
         message = (
@@ -89,6 +92,13 @@ def _build_reply(output: str | AskEmail | AskDateTime, deps: AgentDeps) -> Reply
                 output.prefill_start.isoformat() if output.prefill_start else None
             ),
             duration_minutes=output.duration_minutes,
+        )
+    if isinstance(output, AskConfirm):
+        return AskConfirmReply(
+            message=output.message,
+            start=output.start.isoformat(),
+            duration_minutes=output.duration_minutes,
+            email=output.email,
         )
     return TextReply(message=output)
 
