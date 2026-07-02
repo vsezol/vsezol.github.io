@@ -1,10 +1,8 @@
-import { Button, Group, Stack, Text, TextInput } from '@mantine/core';
 import { useState } from 'react';
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const EMAIL_RE = /^[\w.+-]+@[\w-]+(\.[\w-]+)+$/;
 
 interface Props {
-  prompt: string;
   prefill: string | null;
   disabled: boolean;
   onApprove: (email: string) => void;
@@ -12,49 +10,50 @@ interface Props {
 }
 
 export default function EmailWidget({
-  prompt,
   prefill,
   disabled,
   onApprove,
   onDecline,
 }: Props) {
   const [email, setEmail] = useState(prefill ?? '');
-  const [touched, setTouched] = useState(false);
-  const valid = EMAIL_RE.test(email.trim());
+  const [error, setError] = useState('');
+
+  function approve() {
+    const value = email.trim();
+    if (!EMAIL_RE.test(value)) {
+      setError("Hmm, that doesn't look like a valid email");
+      return;
+    }
+    onApprove(value);
+  }
 
   return (
-    <Stack gap="sm" className="widget-card">
-      <Text size="sm">{prompt}</Text>
-      <TextInput
-        type="email"
-        inputMode="email"
-        autoComplete="email"
-        placeholder="you@example.com"
+    <div className="wcard">
+      <div className="wlabel">Confirm email</div>
+      <input
+        className="winput"
         value={email}
+        placeholder="you@example.com"
+        inputMode="email"
+        autoCapitalize="none"
         disabled={disabled}
-        error={touched && !valid ? 'Enter a valid email' : undefined}
         onChange={(e) => {
-          setEmail(e.currentTarget.value);
-          setTouched(true);
+          setEmail(e.target.value);
+          setError('');
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') approve();
         }}
       />
-      <Group grow>
-        <Button
-          color="teal"
-          disabled={disabled || !valid}
-          onClick={() => onApprove(email.trim())}
-        >
+      {error && <div className="werror">{error}</div>}
+      <div className="wbtns">
+        <button type="button" className="btn-primary" disabled={disabled} onClick={approve}>
           Approve
-        </Button>
-        <Button
-          variant="light"
-          color="red"
-          disabled={disabled}
-          onClick={onDecline}
-        >
+        </button>
+        <button type="button" className="btn-ghost" disabled={disabled} onClick={onDecline}>
           Decline
-        </Button>
-      </Group>
-    </Stack>
+        </button>
+      </div>
+    </div>
   );
 }

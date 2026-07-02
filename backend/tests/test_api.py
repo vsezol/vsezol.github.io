@@ -13,7 +13,7 @@ from pydantic_ai.models.function import FunctionModel
 def _text_model(text: str) -> FunctionModel:
     return FunctionModel(lambda messages, info: ModelResponse(parts=[TextPart(text)]))
 
-from app.agent import AgentDeps, AskDateTime, AskEmail
+from app.agent import AgentDeps, AskConfirm, AskDateTime, AskEmail
 from app.agent import agent as booking_agent
 from app.calendar_service import create_meeting
 from app.main import _build_reply, app
@@ -72,6 +72,13 @@ def test_widget_reply_mapping():
     assert reply.type == "ask_datetime"
     assert reply.prefill_start == start.isoformat()
     assert reply.duration_minutes == 30
+
+    reply = _build_reply(
+        AskConfirm(message="Book it?", start=start, email="a@b.co"), deps
+    )
+    assert reply.type == "ask_confirm"
+    assert reply.start == start.isoformat()
+    assert reply.email == "a@b.co"
 
 
 def test_booking_flow_via_tool_call():

@@ -54,6 +54,21 @@ class AskDateTime(BaseModel):
     duration_minutes: int = Field(default=30, description="Meeting duration")
 
 
+class AskConfirm(BaseModel):
+    """Show the visitor a final recap card with a "Book the meeting" button.
+
+    Use it once both the time and the email are confirmed, right before
+    booking. Echo the confirmed values exactly.
+    """
+
+    message: str = Field(
+        description="Short friendly text shown before the recap card"
+    )
+    start: datetime = Field(description="Confirmed meeting start (ISO 8601)")
+    duration_minutes: int = Field(default=30, description="Meeting duration")
+    email: str = Field(description="Confirmed visitor email")
+
+
 @dataclass
 class AgentDeps:
     client_timezone: str
@@ -81,10 +96,13 @@ Booking flow:
 3. Widget results come back as user messages starting with "[widget]".
    An approval counts as confirmation; a decline means ask what to change.
    Never treat data as confirmed until it arrived via a "[widget]" message.
-4. When both are confirmed, call the book_meeting tool exactly once. After it
-   succeeds, reply with plain text: a short cheerful confirmation (the app
-   renders the Meet link and details itself, so don't repeat the URL).
-5. If book_meeting reports the slot is busy, apologize and respond with
+4. When both are confirmed, respond with AskConfirm — a recap card with a
+   "Book the meeting" button — echoing the confirmed time and email exactly.
+5. Only after the visitor approves the recap ("[widget] Confirmed — book the
+   meeting."), call the book_meeting tool exactly once. After it succeeds,
+   reply with plain text: a short cheerful confirmation (the app renders the
+   Meet link and details itself, so don't repeat the URL).
+6. If book_meeting reports the slot is busy, apologize and respond with
    AskDateTime to pick another time.
 
 Rules:
@@ -101,7 +119,7 @@ Rules:
 agent = Agent(
     settings.llm_model,
     deps_type=AgentDeps,
-    output_type=[str, AskEmail, AskDateTime],
+    output_type=[str, AskEmail, AskDateTime, AskConfirm],
     retries=2,
     instructions=SYSTEM_PROMPT,
 )
