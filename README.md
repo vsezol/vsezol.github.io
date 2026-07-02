@@ -120,4 +120,5 @@ docker run -p 8000:8000 --env-file .env vsezol-agent
 
 Pushing to `master` triggers `.github/workflows/deploy.yml`: it builds
 `frontend/` (with `VITE_API_URL` from the `API_URL` repo variable) and pushes
-`frontend/dist` to the `gh-pages` branch via the `TOKEN` secret.
+`frontend/dist` to the `gh-pages` branch using the workflow's built-in
+`GITHUB_TOKEN` (no personal token needed).
