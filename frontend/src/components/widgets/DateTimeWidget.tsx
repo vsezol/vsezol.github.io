@@ -9,14 +9,20 @@ function toMinutes(hhmm: string): number {
   return h * 60 + m;
 }
 
-function buildSlots(schedule: DayCfg[], step: number): string[] {
-  const enabled = schedule.filter((d) => d.on);
-  const from = enabled.length
-    ? Math.min(...enabled.map((d) => toMinutes(d.start)))
-    : 8 * 60;
-  const to = enabled.length
-    ? Math.max(...enabled.map((d) => toMinutes(d.end)))
-    : 22 * 60;
+function buildSlotsFor(
+  dateIso: string,
+  schedule: DayCfg[],
+  step: number,
+): string[] {
+  let from = 8 * 60;
+  let to = 22 * 60;
+  if (schedule.length === 7) {
+    const day = schedule[(dayjs(dateIso).day() + 6) % 7];
+    if (day.on) {
+      from = toMinutes(day.start);
+      to = toMinutes(day.end);
+    }
+  }
   const out: string[] = [];
   for (let t = from; t + step <= to; t += step) {
     const h = String(Math.floor(t / 60)).padStart(2, '0');
@@ -59,10 +65,6 @@ export default function DateTimeWidget({
   onDecline,
 }: Props) {
   const today = dayjs().startOf('day');
-  const slots = useMemo(
-    () => buildSlots(schedule, slotMinutes),
-    [schedule, slotMinutes],
-  );
 
   const dayOff = (d: Dayjs) =>
     schedule.length === 7 ? !schedule[(d.day() + 6) % 7].on : false;
@@ -74,9 +76,13 @@ export default function DateTimeWidget({
     if (d.isBefore(today)) d = dayjs().add(1, 'day').hour(15).minute(0);
     let guard = 0;
     while (dayOff(d) && guard++ < 14) d = d.add(1, 'day');
+    const date = d.format('YYYY-MM-DD');
     return {
-      date: d.format('YYYY-MM-DD'),
-      time: nearestSlot(slots, d.format('HH:mm')),
+      date,
+      time: nearestSlot(
+        buildSlotsFor(date, schedule, slotMinutes),
+        d.format('HH:mm'),
+      ),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -85,28 +91,40 @@ export default function DateTimeWidget({
   const [selDate, setSelDate] = useState(initial.date);
   const [selTime, setSelTime] = useState(initial.time);
 
+  // the wheel window follows the selected day's schedule
+  const slots = useMemo(
+    () => buildSlotsFor(selDate, schedule, slotMinutes),
+    [selDate, schedule, slotMinutes],
+  );
+
   const wheelRef = useRef<HTMLDivElement>(null);
   const wheelLock = useRef(false);
   const scrollTimer = useRef<number | undefined>(undefined);
   const lockTimer = useRef<number | undefined>(undefined);
 
-  useEffect(() => {
+  function centerInstant(time: string, list: string[]) {
     const el = wheelRef.current;
-    if (!el) return;
-    const i = slots.indexOf(selTime);
-    if (i >= 0) {
+    const i = list.indexOf(time);
+    if (el && i >= 0) {
       wheelLock.current = true;
       el.scrollTop = i * ITEM_H;
       window.setTimeout(() => {
         wheelLock.current = false;
       }, 350);
     }
+  }
+
+  useEffect(() => {
+    // snap the selected time to the (possibly new) day's slot list
+    const snapped = nearestSlot(slots, selTime);
+    if (snapped !== selTime) setSelTime(snapped);
+    centerInstant(snapped, slots);
     return () => {
       window.clearTimeout(scrollTimer.current);
       window.clearTimeout(lockTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [slots]);
 
   function onWheelScroll() {
     if (wheelLock.current || !wheelRef.current) return;

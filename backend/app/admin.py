@@ -2,7 +2,7 @@ import secrets
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 from .admin_config import AgentConfig, store
@@ -11,9 +11,20 @@ from .config import settings
 router = APIRouter()
 security = HTTPBasic()
 
-ADMIN_HTML = (Path(__file__).parent / "static" / "admin.html").read_text(
-    encoding="utf-8"
+# The admin UI is the React app built together with the chat frontend
+# (frontend/admin.html entry). In Docker the bundle is copied to
+# /app/static_site; locally we fall back to frontend/dist.
+_CANDIDATE_DIRS = (
+    Path(__file__).resolve().parent.parent / "static_site",
+    Path(__file__).resolve().parent.parent.parent / "frontend" / "dist",
 )
+
+
+def static_site_dir() -> Path | None:
+    for candidate in _CANDIDATE_DIRS:
+        if (candidate / "admin.html").is_file():
+            return candidate
+    return None
 
 
 def require_admin(
@@ -38,9 +49,15 @@ def require_admin(
         )
 
 
-@router.get("/admin", response_class=HTMLResponse)
-def admin_page(_: None = Depends(require_admin)) -> str:
-    return ADMIN_HTML
+@router.get("/admin")
+def admin_page(_: None = Depends(require_admin)) -> FileResponse:
+    site = static_site_dir()
+    if site is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Admin UI bundle is missing — build the frontend first.",
+        )
+    return FileResponse(site / "admin.html")
 
 
 @router.get("/admin/api/config")

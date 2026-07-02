@@ -5,9 +5,10 @@ interface Props {
   meetUrl: string;
   start: string;
   email: string;
+  lang?: 'en' | 'ru';
 }
 
-export default function SuccessCard({ meetUrl, start, email }: Props) {
+export default function SuccessCard({ meetUrl, start, email, lang = 'en' }: Props) {
   const [copied, setCopied] = useState(false);
   const timer = useRef<number | undefined>(undefined);
 
@@ -34,7 +35,9 @@ export default function SuccessCard({ meetUrl, start, email }: Props) {
         <span className="success-title">Meeting booked</span>
       </div>
       <div className="success-text">
-        {when} — invitations sent to {email} and Vsevolod's calendar.
+        {lang === 'ru'
+          ? `${when} — приглашения отправлены на ${email} и в календарь Всеволода.`
+          : `${when} — invitations sent to ${email} and Vsevolod's calendar.`}
       </div>
       <button type="button" className="copy-btn" onClick={copy}>
         <span className="copy-url">{displayUrl}</span>

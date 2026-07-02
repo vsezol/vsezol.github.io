@@ -4,6 +4,7 @@ interface Props {
   start: string;
   durationMinutes: number;
   email: string;
+  tzLabel?: string;
   disabled: boolean;
   onBook: () => void;
   onDecline: () => void;
@@ -13,6 +14,7 @@ export default function ConfirmCard({
   start,
   durationMinutes,
   email,
+  tzLabel,
   disabled,
   onBook,
   onDecline,
@@ -20,10 +22,10 @@ export default function ConfirmCard({
   const startAt = dayjs(start);
   const endAt = startAt.add(durationMinutes, 'minute');
   const when = `${startAt.format('ddd, MMM D')} · ${startAt.format('HH:mm')}–${endAt.format('HH:mm')}`;
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || tzLabel || '';
 
   return (
-    <div className="confirm-card">
+    <div className="wcard">
       <div className="confirm-title">Meeting with Vsevolod Zolotov</div>
       <div className="confirm-rows">
         <div className="crow">
