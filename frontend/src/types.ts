@@ -28,8 +28,30 @@ export interface ChatResponse {
   history: unknown;
 }
 
+export interface ButtonCfg {
+  label: string;
+  kind: 'link' | 'about';
+  url: string;
+}
+
+export interface DayCfg {
+  on: boolean;
+  start: string;
+  end: string;
+}
+
+export interface SiteConfig {
+  title: string;
+  subtitle: string;
+  avatar: string | null;
+  greeting: string;
+  buttons: ButtonCfg[];
+  schedule: DayCfg[];
+  slot_minutes: number;
+  tz_label: string;
+}
+
 export type ChatItem =
-  | { kind: 'intro'; id: string }
   | { kind: 'chips'; id: string }
   | { kind: 'text'; id: string; role: 'user' | 'agent'; text: string }
   | {

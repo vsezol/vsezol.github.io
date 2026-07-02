@@ -1,36 +1,38 @@
 import dayjs, { Dayjs } from 'dayjs';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { DayCfg } from '../../types';
 
 const ITEM_H = 40;
-const DAY_START_HOUR = 8;
-const DAY_END_HOUR = 22;
-const STEP_MINUTES = 30;
 
-function buildSlots(): string[] {
+function toMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function buildSlots(schedule: DayCfg[], step: number): string[] {
+  const enabled = schedule.filter((d) => d.on);
+  const from = enabled.length
+    ? Math.min(...enabled.map((d) => toMinutes(d.start)))
+    : 8 * 60;
+  const to = enabled.length
+    ? Math.max(...enabled.map((d) => toMinutes(d.end)))
+    : 22 * 60;
   const out: string[] = [];
-  for (
-    let t = DAY_START_HOUR * 60;
-    t + STEP_MINUTES <= DAY_END_HOUR * 60;
-    t += STEP_MINUTES
-  ) {
+  for (let t = from; t + step <= to; t += step) {
     const h = String(Math.floor(t / 60)).padStart(2, '0');
     const m = String(t % 60).padStart(2, '0');
     out.push(`${h}:${m}`);
   }
-  return out;
+  return out.length ? out : ['15:00'];
 }
 
-const SLOTS = buildSlots();
-
-function nearestSlot(time: string): string {
-  if (SLOTS.includes(time)) return time;
-  const [h, m] = time.split(':').map(Number);
-  const v = h * 60 + m;
-  let best = SLOTS[0];
+function nearestSlot(slots: string[], time: string): string {
+  if (slots.includes(time)) return time;
+  const v = toMinutes(time);
+  let best = slots[0];
   let bestDiff = Infinity;
-  for (const s of SLOTS) {
-    const [a, b] = s.split(':').map(Number);
-    const diff = Math.abs(a * 60 + b - v);
+  for (const s of slots) {
+    const diff = Math.abs(toMinutes(s) - v);
     if (diff < bestDiff) {
       bestDiff = diff;
       best = s;
@@ -42,6 +44,8 @@ function nearestSlot(time: string): string {
 interface Props {
   prefillStart: string | null;
   disabled: boolean;
+  slotMinutes: number;
+  schedule: DayCfg[];
   onApprove: (startIso: string) => void;
   onDecline: () => void;
 }
@@ -49,14 +53,31 @@ interface Props {
 export default function DateTimeWidget({
   prefillStart,
   disabled,
+  slotMinutes,
+  schedule,
   onApprove,
   onDecline,
 }: Props) {
   const today = dayjs().startOf('day');
+  const slots = useMemo(
+    () => buildSlots(schedule, slotMinutes),
+    [schedule, slotMinutes],
+  );
+
+  const dayOff = (d: Dayjs) =>
+    schedule.length === 7 ? !schedule[(d.day() + 6) % 7].on : false;
+
   const initial = useMemo(() => {
-    let d = prefillStart ? dayjs(prefillStart) : dayjs().add(1, 'day').hour(15).minute(0);
+    let d = prefillStart
+      ? dayjs(prefillStart)
+      : dayjs().add(1, 'day').hour(15).minute(0);
     if (d.isBefore(today)) d = dayjs().add(1, 'day').hour(15).minute(0);
-    return { date: d.format('YYYY-MM-DD'), time: nearestSlot(d.format('HH:mm')) };
+    let guard = 0;
+    while (dayOff(d) && guard++ < 14) d = d.add(1, 'day');
+    return {
+      date: d.format('YYYY-MM-DD'),
+      time: nearestSlot(slots, d.format('HH:mm')),
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -72,7 +93,7 @@ export default function DateTimeWidget({
   useEffect(() => {
     const el = wheelRef.current;
     if (!el) return;
-    const i = SLOTS.indexOf(selTime);
+    const i = slots.indexOf(selTime);
     if (i >= 0) {
       wheelLock.current = true;
       el.scrollTop = i * ITEM_H;
@@ -95,15 +116,15 @@ export default function DateTimeWidget({
       if (!el) return;
       const i = Math.max(
         0,
-        Math.min(SLOTS.length - 1, Math.round(el.scrollTop / ITEM_H)),
+        Math.min(slots.length - 1, Math.round(el.scrollTop / ITEM_H)),
       );
-      if (SLOTS[i] && SLOTS[i] !== selTime) setSelTime(SLOTS[i]);
+      if (slots[i] && slots[i] !== selTime) setSelTime(slots[i]);
     }, 150);
   }
 
   function centerWheel(time: string) {
     const el = wheelRef.current;
-    const i = SLOTS.indexOf(time);
+    const i = slots.indexOf(time);
     if (el && i >= 0) {
       wheelLock.current = true;
       el.scrollTo({ top: i * ITEM_H, behavior: 'smooth' });
@@ -135,12 +156,13 @@ export default function DateTimeWidget({
       cells.push({
         label: String(d),
         iso: date.format('YYYY-MM-DD'),
-        disabled: date.isBefore(today),
+        disabled: date.isBefore(today) || dayOff(date),
         isToday: date.isSame(today, 'day'),
       });
     }
     return cells;
-  }, [view, today]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, today, schedule]);
 
   const selLabel = `${dayjs(selDate).format('ddd, MMM D')} · ${selTime}`;
 
@@ -204,7 +226,7 @@ export default function DateTimeWidget({
         <div className="wheel-fade-top" />
         <div className="wheel-fade-bottom" />
         <div className="wheel" ref={wheelRef} onScroll={onWheelScroll}>
-          {SLOTS.map((t) => (
+          {slots.map((t) => (
             <div
               key={t}
               className={`wheel-item${t === selTime ? ' selected' : ''}`}

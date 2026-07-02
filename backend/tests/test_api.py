@@ -1,7 +1,12 @@
 import os
+import tempfile
 
 os.environ["DEMO_MODE"] = "true"
 os.environ.setdefault("GEMINI_API_KEY", "test-key")
+os.environ["ADMIN_PASSWORD"] = "test-admin-pass"
+os.environ["CONFIG_PATH"] = os.path.join(
+    tempfile.mkdtemp(prefix="agent-test-"), "agent_config.json"
+)
 
 from datetime import datetime, timedelta, timezone
 
@@ -82,7 +87,14 @@ def test_widget_reply_mapping():
 
 
 def test_booking_flow_via_tool_call():
-    start = (datetime.now(timezone.utc) + timedelta(days=2)).replace(microsecond=0)
+    from zoneinfo import ZoneInfo
+
+    # next weekday at 12:00 owner time — inside the default availability
+    start = datetime.now(ZoneInfo("Europe/Moscow")).replace(
+        hour=12, minute=0, second=0, microsecond=0
+    ) + timedelta(days=1)
+    while start.weekday() > 4:
+        start += timedelta(days=1)
     state = {"calls": 0}
 
     def scripted_model(messages, info):
@@ -116,6 +128,64 @@ def test_booking_flow_via_tool_call():
     assert reply["meet_url"].startswith("https://meet.google.com/")
     assert reply["email"] == "visitor@example.com"
     assert reply["message"] == "All set — see you soon!"
+
+
+def test_message_limit():
+    from pydantic_ai.messages import (
+        ModelMessagesTypeAdapter,
+        ModelRequest,
+        UserPromptPart,
+    )
+
+    history = ModelMessagesTypeAdapter.dump_python(
+        [ModelRequest(parts=[UserPromptPart(content=f"msg {i}")]) for i in range(20)],
+        mode="json",
+    )
+    r = client.post(
+        "/api/chat",
+        json={"message": "one more", "history": history, "client_timezone": "UTC"},
+    )
+    assert r.status_code == 200
+    assert r.json()["reply"]["type"] == "text"
+    assert "limit" in r.json()["reply"]["message"].lower()
+
+
+def test_public_config():
+    r = client.get("/api/config")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["title"]
+    assert len(data["schedule"]) == 7
+    assert data["slot_minutes"] in (15, 30, 45, 60)
+    assert isinstance(data["buttons"], list)
+
+
+def test_admin_requires_auth():
+    assert client.get("/admin").status_code == 401
+    assert client.get("/admin/api/config").status_code == 401
+
+    ok = client.get("/admin", auth=("admin", "test-admin-pass"))
+    assert ok.status_code == 200
+    assert "Agent Admin" in ok.text
+
+
+def test_admin_config_roundtrip():
+    auth = ("admin", "test-admin-pass")
+    cfg = client.get("/admin/api/config", auth=auth).json()
+    cfg["title"] = "Custom Agent"
+    cfg["slot_minutes"] = 45
+    cfg["schedule"][5]["on"] = True
+
+    r = client.put("/admin/api/config", json=cfg, auth=auth)
+    assert r.status_code == 200
+
+    public = client.get("/api/config").json()
+    assert public["title"] == "Custom Agent"
+    assert public["slot_minutes"] == 45
+    assert public["schedule"][5]["on"] is True
+
+    bad = dict(cfg, slot_minutes=17)
+    assert client.put("/admin/api/config", json=bad, auth=auth).status_code == 422
 
 
 def test_demo_mode_booking():

@@ -5,9 +5,15 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
-from pydantic_ai.messages import ModelMessagesTypeAdapter
+from pydantic_ai.messages import (
+    ModelMessagesTypeAdapter,
+    ModelRequest,
+    UserPromptPart,
+)
 from pydantic_ai.usage import UsageLimits
 
+from .admin import router as admin_router
+from .admin_config import store
 from .agent import AgentDeps, AskConfirm, AskDateTime, AskEmail, agent
 from .config import settings
 from .rate_limit import RateLimiter
@@ -34,8 +40,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(admin_router)
+
 rate_limiter = RateLimiter(
     settings.rate_limit_requests, settings.rate_limit_window_seconds
+)
+
+LIMIT_REACHED_MESSAGE = (
+    "This conversation has reached its message limit — please refresh the "
+    "page to start a new one. 🙏\n\n"
+    "Лимит сообщений для этой беседы исчерпан — обновите страницу, чтобы "
+    "начать новую. 🙏"
 )
 
 
@@ -56,6 +71,22 @@ async def rate_limit_middleware(request: Request, call_next):
 @app.get("/healthz")
 def healthz() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/config")
+def public_config() -> dict:
+    """Public site config consumed by the chat frontend."""
+    cfg = store.load()
+    return {
+        "title": cfg.title,
+        "subtitle": cfg.subtitle,
+        "avatar": cfg.avatar,
+        "greeting": cfg.greeting,
+        "buttons": [b.model_dump() for b in cfg.buttons],
+        "schedule": [d.model_dump() for d in cfg.schedule],
+        "slot_minutes": cfg.slot_minutes,
+        "tz_label": cfg.tz_label,
+    }
 
 
 def _validate_timezone(tz: str | None) -> str:
@@ -116,6 +147,18 @@ async def chat(req: ChatRequest) -> ChatResponse:
             history = ModelMessagesTypeAdapter.validate_python(req.history)
         except ValidationError:
             raise HTTPException(status_code=400, detail="Invalid history payload")
+
+        user_turns = sum(
+            1
+            for m in history
+            if isinstance(m, ModelRequest)
+            and any(isinstance(p, UserPromptPart) for p in m.parts)
+        )
+        if user_turns >= settings.max_user_messages:
+            return ChatResponse(
+                reply=TextReply(message=LIMIT_REACHED_MESSAGE),
+                history=req.history,
+            )
 
     deps = AgentDeps(client_timezone=_validate_timezone(req.client_timezone))
 

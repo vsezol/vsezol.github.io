@@ -56,6 +56,17 @@ Run tests: `uv run pytest`.
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REFRESH_TOKEN` | Google Calendar access |
 | `DEMO_MODE` | `true` → fake bookings, no Google calls (local dev only) |
 | `CORS_ORIGINS` | comma-separated allowed origins |
+| `ADMIN_PASSWORD` | enables the `/admin` panel (HTTP Basic Auth); `ADMIN_USER` defaults to `admin` |
+| `MAX_USER_MESSAGES` | per-conversation visitor message cap (default 20) |
+
+### Admin panel
+
+`https://<backend-domain>/admin` (browser's native Basic Auth prompt).
+Editable there: agent name/subtitle/avatar, greeting, buttons under the
+greeting, weekly availability + slot duration, and the "about me" knowledge
+base the agent answers from. Config is stored as JSON — attach a Railway
+volume at `/data` so it survives redeploys (without it changes are lost on
+each deploy).
 
 ### Google Calendar setup (one-time)
 
