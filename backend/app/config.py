@@ -6,8 +6,9 @@ class Settings(BaseSettings):
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
-    # LLM (ANTHROPIC_API_KEY is read from the environment by pydantic-ai)
-    anthropic_model: str = "claude-opus-4-8"
+    # LLM: any pydantic-ai "provider:model" string. Gemini needs
+    # GEMINI_API_KEY in the environment, Anthropic needs ANTHROPIC_API_KEY.
+    llm_model: str = "google:gemini-3.5-flash"
 
     # Owner
     owner_name: str = "Vsevolod Zolotov"

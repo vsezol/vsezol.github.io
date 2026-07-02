@@ -99,7 +99,7 @@ Rules:
 """
 
 agent = Agent(
-    f"anthropic:{settings.anthropic_model}",
+    settings.llm_model,
     deps_type=AgentDeps,
     output_type=[str, AskEmail, AskDateTime],
     retries=2,
