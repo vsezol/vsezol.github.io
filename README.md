@@ -77,19 +77,44 @@ The event is created in the owner's primary calendar with a Meet link;
 `sendUpdates=all` emails the invitation to the visitor and the owner. Before
 booking, the agent checks the slot via the FreeBusy API.
 
-### Deploying the backend
+### Deploying the backend on Railway
 
-Any Docker host works:
+Everything is preconfigured: `backend/railway.json` (config as code) sets the
+Dockerfile build, the `/healthz` health check, restart policy and watch paths,
+and the Dockerfile respects Railway's `PORT`.
+
+1. [railway.com](https://railway.com) → **New Project → Deploy from GitHub
+   repo** → pick `vsezol/vsezol.github.io`.
+2. In the service: **Settings → Source → Root Directory** → `backend`.
+3. **Variables → Raw Editor** → paste and fill in:
+
+   ```env
+   ANTHROPIC_API_KEY=sk-ant-...
+   GOOGLE_CLIENT_ID=...apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=...
+   GOOGLE_REFRESH_TOKEN=...
+   OWNER_EMAIL=vsezold@gmail.com
+   OWNER_TIMEZONE=Europe/Moscow
+   ```
+
+4. **Settings → Networking → Generate Domain** (port 8000) — copy the
+   `https://….up.railway.app` URL.
+5. Verify: `https://<domain>/healthz` → `{"status":"ok"}`.
+6. Point the frontend at it:
+
+   ```bash
+   gh variable set API_URL --repo vsezol/vsezol.github.io --body "https://<domain>"
+   ```
+
+   then re-run the Deploy workflow (or push to `master`).
+
+Any other Docker host works the same way:
 
 ```bash
 cd backend
 docker build -t vsezol-agent .
 docker run -p 8000:8000 --env-file .env vsezol-agent
 ```
-
-The container respects `PORT`, so Railway/Render/Fly work out of the box.
-After deploying, set the repository variable `API_URL` to the backend's
-public URL (e.g. `https://agent.example.com`) so the Pages build points at it.
 
 ## Deployment (frontend)
 
