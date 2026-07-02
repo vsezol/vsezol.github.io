@@ -36,6 +36,12 @@ jobs:
         env:
           VITE_API_URL: ${{ vars.API_URL }}
 
+      # The admin app is served by the backend (behind Basic Auth) — it has
+      # no business on the public Pages site. /admin redirects there instead
+      # (frontend/public/admin/index.html).
+      - name: Strip admin bundle from the public site
+        run: rm -f frontend/dist/admin.html
+
       - name: Deploy to GitHub Pages
         if: github.event_name != 'pull_request'
         uses: JamesIves/github-pages-deploy-action@v4
