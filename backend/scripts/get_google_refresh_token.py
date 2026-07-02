@@ -17,7 +17,11 @@ import sys
 
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
+SCOPES = [
+    "https://www.googleapis.com/auth/calendar.events",
+    # availability check (FreeBusy API)
+    "https://www.googleapis.com/auth/calendar.freebusy",
+]
 
 
 def main() -> None:

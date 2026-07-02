@@ -6,12 +6,12 @@ from datetime import datetime, timedelta
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 from .config import settings
 
 logger = logging.getLogger(__name__)
 
-SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 TOKEN_URI = "https://oauth2.googleapis.com/token"
 
 
@@ -25,13 +25,14 @@ class BookingResult:
 
 
 def _calendar_service():
+    # scopes intentionally omitted: the refresh grant keeps whatever scopes
+    # the user consented to (see scripts/get_google_refresh_token.py)
     creds = Credentials(
         token=None,
         refresh_token=settings.google_refresh_token,
         token_uri=TOKEN_URI,
         client_id=settings.google_client_id,
         client_secret=settings.google_client_secret,
-        scopes=SCOPES,
     )
     creds.refresh(Request())
     return build("calendar", "v3", credentials=creds, cache_discovery=False)
@@ -52,17 +53,23 @@ def is_slot_free(start: datetime, duration_minutes: int) -> bool:
     if settings.owner_email:
         ids.append(settings.owner_email)
     service = _calendar_service()
-    response = (
-        service.freebusy()
-        .query(
-            body={
-                "timeMin": start.isoformat(),
-                "timeMax": end.isoformat(),
-                "items": [{"id": i} for i in ids],
-            }
+    try:
+        response = (
+            service.freebusy()
+            .query(
+                body={
+                    "timeMin": start.isoformat(),
+                    "timeMax": end.isoformat(),
+                    "items": [{"id": i} for i in ids],
+                }
+            )
+            .execute()
         )
-        .execute()
-    )
+    except HttpError as exc:
+        # Availability check must never block a booking (e.g. the refresh
+        # token was granted without the freebusy scope).
+        logger.warning("FreeBusy check failed, assuming the slot is free: %s", exc)
+        return True
     for calendar in response.get("calendars", {}).values():
         if calendar.get("errors"):
             continue  # not shared with the bot — can't see it, skip
