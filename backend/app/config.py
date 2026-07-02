@@ -40,9 +40,12 @@ class Settings(BaseSettings):
     # Hard cap of visitor messages per conversation (token protection)
     max_user_messages: int = 20
 
-    # Admin panel (served at /admin behind HTTP Basic Auth)
+    # Admin API auth (HTTP Basic; the admin UI lives in the site SPA at /#admin)
     admin_user: str = "admin"
-    admin_password: str = ""  # empty → admin panel disabled
+    admin_password: str = ""  # empty → admin API disabled
+
+    # Public site URL ( /admin on the backend redirects to <site_url>/#admin )
+    site_url: str = "https://vsezol.com"
 
     # Where the editable agent config lives. Defaults to /data (attach a
     # Railway volume there) or ./agent_config.json as a non-persistent

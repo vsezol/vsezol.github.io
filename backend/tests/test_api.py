@@ -161,14 +161,15 @@ def test_public_config():
 
 
 def test_admin_requires_auth():
-    assert client.get("/admin").status_code == 401
     assert client.get("/admin/api/config").status_code == 401
+    assert (
+        client.get("/admin/api/config", auth=("admin", "wrong")).status_code == 401
+    )
 
-    ok = client.get("/admin", auth=("admin", "test-admin-pass"))
-    # 200 when the frontend bundle is built (frontend/dist), 503 otherwise
-    assert ok.status_code in (200, 503)
-    if ok.status_code == 200:
-        assert "Agent Admin" in ok.text
+    # /admin redirects to the SPA admin route
+    r = client.get("/admin", follow_redirects=False)
+    assert r.status_code == 307
+    assert r.headers["location"].endswith("/#admin")
 
 
 def test_admin_config_roundtrip():

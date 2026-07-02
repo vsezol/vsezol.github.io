@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
+import '../styles/admin.css';
 import type { AdminConfig, ButtonCfg, DayCfg } from '../types';
 
-const CONFIG_URL = `${window.location.origin}/admin/api/config`;
+const API_URL: string = import.meta.env.VITE_API_URL ?? '';
+const CONFIG_URL = `${API_URL}/admin/api/config`;
+const CREDS_KEY = 'agent-admin-creds';
+
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const SLOT_OPTS = [15, 30, 45, 60] as const;
-const DEFAULT_AVATAR = 'https://vsezol.com/my-avatar.webp';
+const DEFAULT_AVATAR = '/my-avatar.webp';
 
 function timeOptions(): string[] {
   const out: string[] = [];
@@ -20,28 +24,63 @@ const TIME_OPTS = timeOptions();
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
+function authHeader(creds: string): Record<string, string> {
+  return { Authorization: `Basic ${creds}` };
+}
+
 export default function AdminApp() {
+  const [creds, setCreds] = useState<string | null>(
+    () => sessionStorage.getItem(CREDS_KEY),
+  );
   const [cfg, setCfg] = useState<AdminConfig | null>(null);
   const [loadError, setLoadError] = useState('');
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [saveError, setSaveError] = useState('');
   const saveTimer = useRef<number | undefined>(undefined);
 
-  async function load() {
+  async function load(activeCreds: string) {
     setLoadError('');
     try {
-      const res = await fetch(CONFIG_URL);
+      const res = await fetch(CONFIG_URL, { headers: authHeader(activeCreds) });
+      if (res.status === 401) {
+        sessionStorage.removeItem(CREDS_KEY);
+        setCreds(null);
+        return false;
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setCfg(await res.json());
+      return true;
     } catch (err) {
       setLoadError(String(err));
+      return false;
     }
   }
 
   useEffect(() => {
-    void load();
+    if (creds) void load(creds);
     return () => window.clearTimeout(saveTimer.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function signIn(user: string, password: string): Promise<string | null> {
+    const encoded = btoa(`${user}:${password}`);
+    try {
+      const res = await fetch(CONFIG_URL, { headers: authHeader(encoded) });
+      if (res.status === 401) return 'Wrong login or password';
+      if (res.status === 503) return 'Admin is disabled (ADMIN_PASSWORD is not set)';
+      if (!res.ok) return `HTTP ${res.status}`;
+      sessionStorage.setItem(CREDS_KEY, encoded);
+      setCreds(encoded);
+      setCfg(await res.json());
+      return null;
+    } catch {
+      return 'Network error — is the backend up?';
+    }
+  }
+
+  if (!creds) {
+    return <Login onSubmit={signIn} />;
+  }
 
   if (loadError) {
     return (
@@ -49,7 +88,7 @@ export default function AdminApp() {
         <div className="adm-col">
           <div className="adm-loading">
             Failed to load the config ({loadError}).{' '}
-            <button className="adm-btn-muted" onClick={() => void load()}>
+            <button className="adm-btn-muted" onClick={() => void load(creds)}>
               Retry
             </button>
           </div>
@@ -117,12 +156,13 @@ export default function AdminApp() {
   }
 
   async function save() {
+    if (!creds) return;
     setSaveState('saving');
     setSaveError('');
     try {
       const res = await fetch(CONFIG_URL, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeader(creds) },
         body: JSON.stringify(cfg),
       });
       if (!res.ok) {
@@ -157,12 +197,7 @@ export default function AdminApp() {
             <div className="adm-h1">Agent Admin</div>
             <div className="adm-hsub">Changes apply to the chat after saving</div>
           </div>
-          <a
-            className="adm-open-chat"
-            href="https://vsezol.com"
-            target="_blank"
-            rel="noreferrer"
-          >
+          <a className="adm-open-chat" href="/">
             Open chat ↗
           </a>
         </div>
@@ -385,8 +420,8 @@ export default function AdminApp() {
               type="button"
               className="adm-reset"
               onClick={() => {
-                if (confirm('Reload the saved config and discard local edits?')) {
-                  void load();
+                if (creds && confirm('Reload the saved config and discard local edits?')) {
+                  void load(creds);
                 }
               }}
             >
@@ -394,6 +429,65 @@ export default function AdminApp() {
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function Login({
+  onSubmit,
+}: {
+  onSubmit: (user: string, password: string) => Promise<string | null>;
+}) {
+  const [user, setUser] = useState('admin');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    if (busy || !password) return;
+    setBusy(true);
+    setError('');
+    const err = await onSubmit(user, password);
+    if (err) setError(err);
+    setBusy(false);
+  }
+
+  return (
+    <div className="adm-wrap">
+      <div className="adm-login">
+        <div className="adm-h1">Agent Admin</div>
+        <div className="adm-hsub">Sign in to manage the agent</div>
+        <input
+          className="adm-input"
+          placeholder="Login"
+          autoComplete="username"
+          value={user}
+          onChange={(e) => setUser(e.target.value)}
+        />
+        <input
+          className="adm-input"
+          type="password"
+          placeholder="Password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void submit();
+          }}
+        />
+        {error && <div className="adm-login-error">{error}</div>}
+        <button
+          type="button"
+          className="adm-save"
+          disabled={busy || !password}
+          onClick={() => void submit()}
+        >
+          {busy ? 'Signing in…' : 'Sign in'}
+        </button>
+        <a className="adm-open-chat" href="/" style={{ textAlign: 'center' }}>
+          ← Back to chat
+        </a>
       </div>
     </div>
   );
