@@ -1,25 +1,69 @@
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
-import { sendChat } from '../api';
-import { LINKS } from '../links';
-import type { AgentReply, ChatItem } from '../types';
+import { fetchConfig, sendChat } from '../api';
+import type { AgentReply, ChatItem, SiteConfig } from '../types';
 import ConfirmCard from './widgets/ConfirmCard';
 import DateTimeWidget from './widgets/DateTimeWidget';
 import EmailWidget from './widgets/EmailWidget';
 import SuccessCard from './widgets/SuccessCard';
 
+const DEFAULT_CONFIG: SiteConfig = {
+  title: "Vsevolod's AI Agent",
+  subtitle: 'Senior AI Engineer · books meetings for you',
+  avatar: null,
+  greeting:
+    "I'm the personal AI agent of Vsevolod Zolotov — Senior AI Engineer " +
+    'building LLM-powered products. Want to book a meeting? Tell me when ' +
+    'works for you, e.g. "tomorrow at 15:00, my email is you@example.com"',
+  buttons: [
+    { label: 'About Vsevolod', kind: 'about', url: '' },
+    { label: 'GitHub ↗', kind: 'link', url: 'https://github.com/vsezol' },
+    { label: 'LinkedIn ↗', kind: 'link', url: 'https://www.linkedin.com/in/vsezol' },
+    { label: 'Telegram ↗', kind: 'link', url: 'https://t.me/vsezol' },
+  ],
+  schedule: [],
+  slot_minutes: 30,
+  tz_label: '',
+};
+
 let nextId = 0;
 const uid = () => `item-${nextId++}`;
 
 export default function ChatApp() {
-  const [items, setItems] = useState<ChatItem[]>([
-    { kind: 'intro', id: uid() },
-    { kind: 'chips', id: uid() },
-  ]);
+  const [config, setConfig] = useState<SiteConfig>(DEFAULT_CONFIG);
+  const [items, setItems] = useState<ChatItem[]>([]);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const historyRef = useRef<unknown | null>(null);
   const chatRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchConfig()
+      .then((cfg) => {
+        if (cancelled) return;
+        setConfig(cfg);
+        setItems([
+          { kind: 'text', id: uid(), role: 'agent', text: cfg.greeting },
+          { kind: 'chips', id: uid() },
+        ]);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setItems([
+          {
+            kind: 'text',
+            id: uid(),
+            role: 'agent',
+            text: DEFAULT_CONFIG.greeting,
+          },
+          { kind: 'chips', id: uid() },
+        ]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const el = chatRef.current;
@@ -123,40 +167,32 @@ export default function ChatApp() {
 
   function renderItem(item: ChatItem) {
     switch (item.kind) {
-      case 'intro':
-        return (
-          <div className="msg" key={item.id}>
-            <div className="bubble-agent">
-              I'm the personal AI agent of{' '}
-              <span className="hl">Vsevolod Zolotov</span> — Senior AI Engineer
-              building LLM-powered products. Want to book a meeting? Tell me
-              when works for you, e.g.{' '}
-              <span className="dim">
-                "tomorrow at 15:00, my email is you@example.com"
-              </span>
-            </div>
-          </div>
-        );
       case 'chips':
         return (
           <div className="msg" key={item.id}>
             <div className="chips">
-              <button
-                type="button"
-                className="chip"
-                onClick={() => void send('Who is Vsevolod?', 'About Vsevolod')}
-              >
-                About Vsevolod
-              </button>
-              <a className="chip" href={LINKS.github} target="_blank" rel="noreferrer">
-                GitHub ↗
-              </a>
-              <a className="chip" href={LINKS.linkedin} target="_blank" rel="noreferrer">
-                LinkedIn ↗
-              </a>
-              <a className="chip" href={LINKS.telegram} target="_blank" rel="noreferrer">
-                Telegram ↗
-              </a>
+              {config.buttons.map((b, i) =>
+                b.kind === 'link' ? (
+                  <a
+                    key={i}
+                    className="chip"
+                    href={b.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {b.label}
+                  </a>
+                ) : (
+                  <button
+                    key={i}
+                    type="button"
+                    className="chip"
+                    onClick={() => void send(b.label)}
+                  >
+                    {b.label}
+                  </button>
+                ),
+              )}
             </div>
           </div>
         );
@@ -204,6 +240,8 @@ export default function ChatApp() {
               <DateTimeWidget
                 prefillStart={item.prefillStart}
                 disabled={busy}
+                slotMinutes={config.slot_minutes}
+                schedule={config.schedule}
                 onApprove={(startIso) => {
                   resolveWidget(
                     item.id,
@@ -273,14 +311,16 @@ export default function ChatApp() {
       <div className="shell">
         <div className="header">
           <div className="avatar-wrap">
-            <img className="avatar" src="/my-avatar.webp" alt="Vsevolod" />
+            <img
+              className="avatar"
+              src={config.avatar ?? '/my-avatar.webp'}
+              alt={config.title}
+            />
             <span className="online-dot" />
           </div>
           <div className="header-info">
-            <div className="header-name">Vsevolod's AI Agent</div>
-            <div className="header-sub">
-              Senior AI Engineer · books meetings for you
-            </div>
+            <div className="header-name">{config.title}</div>
+            <div className="header-sub">{config.subtitle}</div>
           </div>
         </div>
 

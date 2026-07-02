@@ -37,6 +37,17 @@ class Settings(BaseSettings):
     rate_limit_requests: int = 30
     rate_limit_window_seconds: int = 300
     max_history_messages: int = 120
+    # Hard cap of visitor messages per conversation (token protection)
+    max_user_messages: int = 20
+
+    # Admin panel (served at /admin behind HTTP Basic Auth)
+    admin_user: str = "admin"
+    admin_password: str = ""  # empty → admin panel disabled
+
+    # Where the editable agent config lives. Defaults to /data (attach a
+    # Railway volume there) or ./agent_config.json as a non-persistent
+    # fallback.
+    config_path: str = ""
 
     @property
     def cors_origins_list(self) -> list[str]:
