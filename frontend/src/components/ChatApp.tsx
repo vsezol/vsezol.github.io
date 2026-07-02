@@ -9,7 +9,7 @@ import EmailWidget from './widgets/EmailWidget';
 import SuccessCard from './widgets/SuccessCard';
 
 const DEFAULT_CONFIG: SiteConfig = {
-  title: "Vsevolod's AI Agent",
+  title: "Hi, I'm Vsevolod",
   subtitle: 'Senior AI Engineer at OTP Group',
   avatar: null,
   greeting:
@@ -353,19 +353,6 @@ export default function ChatApp() {
 
   return (
     <div className="app">
-      <div className={`topbar${started ? ' on' : ''}`}>
-        <div className="topbar-in">
-          <div
-            className="avatar-sm"
-            style={{ backgroundImage: `url("${avatarUrl}")` }}
-          />
-          <div className="topbar-info">
-            <div className="topbar-title">{config.title}</div>
-            <div className="topbar-sub">{config.subtitle}</div>
-          </div>
-        </div>
-      </div>
-
       <div className="scroll" ref={chatRef}>
         {!started ? (
           <div className="hero">
@@ -376,12 +363,22 @@ export default function ChatApp() {
                 style={{ backgroundImage: `url("${avatarUrl}")` }}
               />
             </div>
-            <h1 className="hero-title">Hi, I'm Vsevolod</h1>
+            <h1 className="hero-title">{config.title}</h1>
             <div className="hero-sub">{config.subtitle}</div>
             <p className="hero-intro">{config.greeting}</p>
           </div>
         ) : (
           <div className="thread">
+            <div className="thread-intro">
+              <div
+                className="thread-avatar"
+                style={{ backgroundImage: `url("${avatarUrl}")` }}
+              />
+              <div className="thread-intro-info">
+                <div className="thread-intro-title">{config.title}</div>
+                <div className="thread-intro-sub">{config.subtitle}</div>
+              </div>
+            </div>
             {items.map(renderItem)}
             {busy && <TypingIndicator lang={lang} />}
           </div>
@@ -389,7 +386,7 @@ export default function ChatApp() {
       </div>
 
       <div className="composer-zone">
-        {started && <div className="chips-row">{chips}</div>}
+        <div className="chips-row">{chips}</div>
         <div className={`composer${focus ? ' focus' : ''}`}>
           <input
             className="composer-input"
@@ -410,9 +407,6 @@ export default function ChatApp() {
             }}
           />
           <div className="composer-bottom">
-            <div className="composer-hint">
-              Books real meetings in Google Calendar
-            </div>
             <button
               type="button"
               className={`send-btn${canSend ? ' ready' : ''}`}
@@ -431,7 +425,6 @@ export default function ChatApp() {
             </button>
           </div>
         </div>
-        {!started && <div className="hero-chips">{chips}</div>}
       </div>
 
       <div className={`spacer${started ? ' chatting' : ''}`} />
