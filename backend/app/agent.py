@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, ModelRetry, RunContext
+from pydantic_ai.models.fallback import FallbackModel
 
 from .calendar_service import BookingResult, create_meeting, is_slot_free
 from .config import settings
@@ -116,8 +117,14 @@ Rules:
   invent facts about {settings.owner_name}.
 """
 
+_model = (
+    FallbackModel(settings.llm_model, settings.llm_fallback_model)
+    if settings.llm_fallback_model
+    else settings.llm_model
+)
+
 agent = Agent(
-    settings.llm_model,
+    _model,
     deps_type=AgentDeps,
     output_type=[str, AskEmail, AskDateTime, AskConfirm],
     retries=2,

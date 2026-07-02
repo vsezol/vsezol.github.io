@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     # LLM: any pydantic-ai "provider:model" string. Gemini needs
     # GEMINI_API_KEY in the environment, Anthropic needs ANTHROPIC_API_KEY.
     llm_model: str = "google:gemini-3.5-flash"
+    # Used automatically when the primary model errors (e.g. 503 overload).
+    # Set empty to disable.
+    llm_fallback_model: str = "google:gemini-2.5-flash"
 
     # Owner
     owner_name: str = "Vsevolod Zolotov"
