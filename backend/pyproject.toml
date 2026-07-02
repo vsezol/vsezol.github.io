@@ -6,7 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",
-    "pydantic-ai-slim[anthropic]>=1.0,<2.0",
+    "pydantic-ai-slim[google,anthropic]>=1.0,<2.0",
     "pydantic-settings>=2.6",
     "google-api-python-client>=2.150",
     "google-auth>=2.35",

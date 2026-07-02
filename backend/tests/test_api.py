@@ -1,7 +1,7 @@
 import os
 
 os.environ["DEMO_MODE"] = "true"
-os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
+os.environ.setdefault("GEMINI_API_KEY", "test-key")
 
 from datetime import datetime, timedelta, timezone
 

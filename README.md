@@ -12,7 +12,7 @@ Google Calendar with a Google Meet link, and emails invitations to both sides.
 frontend/   React + Vite + Mantine + @chatscope/chat-ui-kit-react
             → GitHub Pages (this repo, gh-pages branch)
 
-backend/    Python + FastAPI + Pydantic AI (Claude via API key)
+backend/    Python + FastAPI + Pydantic AI (Gemini by default, any provider via LLM_MODEL)
             + Google Calendar API (Meet link, invites, freebusy check)
             → any Docker host (Fly.io / Railway / Render / VPS)
 ```
@@ -50,8 +50,8 @@ Run tests: `uv run pytest`.
 
 | Variable | Purpose |
 | --- | --- |
-| `ANTHROPIC_API_KEY` | Claude API key (required) |
-| `ANTHROPIC_MODEL` | default `claude-opus-4-8`; use `claude-sonnet-4-6` to cut costs |
+| `GEMINI_API_KEY` | Gemini API key (required with the default model) |
+| `LLM_MODEL` | any pydantic-ai model string; default `google:gemini-3.5-flash`, e.g. `anthropic:claude-opus-4-8` (then set `ANTHROPIC_API_KEY`) |
 | `OWNER_NAME` / `OWNER_EMAIL` / `OWNER_TIMEZONE` | whose calendar to book |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REFRESH_TOKEN` | Google Calendar access |
 | `DEMO_MODE` | `true` → fake bookings, no Google calls (local dev only) |
@@ -89,7 +89,7 @@ and the Dockerfile respects Railway's `PORT`.
 3. **Variables → Raw Editor** → paste and fill in:
 
    ```env
-   ANTHROPIC_API_KEY=sk-ant-...
+   GEMINI_API_KEY=...
    GOOGLE_CLIENT_ID=...apps.googleusercontent.com
    GOOGLE_CLIENT_SECRET=...
    GOOGLE_REFRESH_TOKEN=...
