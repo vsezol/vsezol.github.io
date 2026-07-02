@@ -1,0 +1,131 @@
+import logging
+from zoneinfo import ZoneInfo
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import ValidationError
+from pydantic_ai.messages import ModelMessagesTypeAdapter
+from pydantic_ai.usage import UsageLimits
+
+from .agent import AgentDeps, AskDateTime, AskEmail, agent
+from .config import settings
+from .rate_limit import RateLimiter
+from .schemas import (
+    AskDateTimeReply,
+    AskEmailReply,
+    BookedReply,
+    ChatRequest,
+    ChatResponse,
+    Reply,
+    TextReply,
+)
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+app = FastAPI(title="Vsevolod's AI Agent", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins_list,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+rate_limiter = RateLimiter(
+    settings.rate_limit_requests, settings.rate_limit_window_seconds
+)
+
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    if request.url.path.startswith("/api/"):
+        client_ip = request.headers.get(
+            "x-forwarded-for", request.client.host if request.client else "?"
+        ).split(",")[0].strip()
+        if not rate_limiter.allow(client_ip):
+            return JSONResponse(
+                {"detail": "Too many requests, please slow down."},
+                status_code=429,
+            )
+    return await call_next(request)
+
+
+@app.get("/healthz")
+def healthz() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+def _validate_timezone(tz: str | None) -> str:
+    if not tz:
+        return "UTC"
+    try:
+        ZoneInfo(tz)
+    except (KeyError, ValueError):
+        return "UTC"
+    return tz
+
+
+def _build_reply(output: str | AskEmail | AskDateTime, deps: AgentDeps) -> Reply:
+    if deps.booking is not None:
+        booking = deps.booking
+        message = (
+            output if isinstance(output, str) else "Your meeting is booked! 🎉"
+        )
+        return BookedReply(
+            message=message,
+            meet_url=booking.meet_url,
+            start=booking.start.isoformat(),
+            end=booking.end.isoformat(),
+            email=booking.visitor_email,
+        )
+    if isinstance(output, AskEmail):
+        return AskEmailReply(message=output.message, prefill=output.prefill)
+    if isinstance(output, AskDateTime):
+        return AskDateTimeReply(
+            message=output.message,
+            prefill_start=(
+                output.prefill_start.isoformat() if output.prefill_start else None
+            ),
+            duration_minutes=output.duration_minutes,
+        )
+    return TextReply(message=output)
+
+
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat(req: ChatRequest) -> ChatResponse:
+    history = None
+    if req.history:
+        if len(req.history) > settings.max_history_messages:
+            raise HTTPException(
+                status_code=413,
+                detail="This conversation is too long — please refresh the page.",
+            )
+        try:
+            history = ModelMessagesTypeAdapter.validate_python(req.history)
+        except ValidationError:
+            raise HTTPException(status_code=400, detail="Invalid history payload")
+
+    deps = AgentDeps(client_timezone=_validate_timezone(req.client_timezone))
+
+    try:
+        result = await agent.run(
+            req.message,
+            deps=deps,
+            message_history=history,
+            usage_limits=UsageLimits(request_limit=8),
+        )
+    except Exception:
+        logger.exception("Agent run failed")
+        raise HTTPException(
+            status_code=502,
+            detail="The agent is temporarily unavailable. Please try again.",
+        )
+
+    return ChatResponse(
+        reply=_build_reply(result.output, deps),
+        history=ModelMessagesTypeAdapter.dump_python(
+            result.all_messages(), mode="json"
+        ),
+    )
