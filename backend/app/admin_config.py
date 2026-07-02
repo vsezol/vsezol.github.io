@@ -63,7 +63,7 @@ def _default_schedule() -> list[DayCfg]:
 
 
 class AgentConfig(BaseModel):
-    title: str = Field(default="Vsevolod's AI Agent", max_length=60)
+    title: str = Field(default="Hi, I'm Vsevolod", max_length=60)
     subtitle: str = Field(
         default="Senior AI Engineer at OTP Group", max_length=100
     )

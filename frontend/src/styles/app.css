@@ -118,74 +118,6 @@ textarea::placeholder {
   overflow: hidden;
 }
 
-/* ---------- top bar ---------- */
-.topbar {
-  flex: none;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0);
-  background: transparent;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  opacity: 0;
-  transform: translateY(-8px);
-  pointer-events: none;
-  transition:
-    opacity 0.5s ease 0.15s,
-    transform 0.5s ease 0.15s,
-    border-color 0.5s ease;
-}
-
-.topbar.on {
-  border-bottom-color: var(--line-07);
-  background: rgba(12, 15, 20, 0.85);
-  opacity: 1;
-  transform: none;
-  pointer-events: auto;
-}
-
-.topbar-in {
-  width: 100%;
-  max-width: 760px;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 12px 20px;
-}
-
-.avatar-sm {
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
-  flex: none;
-  background-size: cover;
-  background-position: center;
-}
-
-.topbar-info {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
-.topbar-title {
-  font: 600 14.5px var(--font);
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.topbar-sub {
-  font: 400 11px var(--font);
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 /* ---------- scroll area ---------- */
 .scroll {
   flex: 1;
@@ -224,9 +156,9 @@ textarea::placeholder {
 }
 
 .avatar-lg {
-  width: 76px;
-  height: 76px;
-  border-radius: 24px;
+  width: 152px;
+  height: 152px;
+  border-radius: 44px;
   position: relative;
   background-size: cover;
   background-position: center;
@@ -265,7 +197,46 @@ textarea::placeholder {
   display: flex;
   flex-direction: column;
   gap: 22px;
-  padding: 18px 20px 26px;
+  padding: 26px 20px 26px;
+}
+
+/* intro block scrolls away as part of the transcript */
+.thread-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 10px 0 18px;
+  border-bottom: 1px solid var(--line-06, rgba(255, 255, 255, 0.06));
+}
+
+.thread-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 26px;
+  flex: none;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.thread-intro-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.thread-intro-title {
+  font: 600 18px var(--font);
+  color: var(--text);
+}
+
+.thread-intro-sub {
+  font: 500 10.5px var(--mono);
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .msg {
@@ -747,8 +718,8 @@ textarea::placeholder {
   font: 500 12px var(--font);
   color: var(--text-2);
   padding: 7px 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--line-10);
+  background: transparent;
+  border: 1px solid var(--line-12);
   border-radius: 999px;
   cursor: pointer;
   text-decoration: none;
@@ -758,20 +729,6 @@ textarea::placeholder {
 .chip:hover {
   border-color: rgba(110, 155, 255, 0.45);
   color: var(--text);
-}
-
-.hero-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-  padding: 16px 4px 0;
-  animation: heroIn 0.7s ease;
-}
-
-.hero-chips .chip {
-  font: 500 12.5px var(--font);
-  padding: 9px 14px;
 }
 
 .composer {
@@ -805,14 +762,7 @@ textarea::placeholder {
 .composer-bottom {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.composer-hint {
-  font: 400 11px var(--font);
-  color: var(--faint);
-  padding-left: 6px;
+  justify-content: flex-end;
 }
 
 .send-btn {
