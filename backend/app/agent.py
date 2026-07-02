@@ -146,12 +146,14 @@ Conversation rules:
 Booking flow (meeting length: {cfg.slot_minutes} minutes by default):
 1. To book you need two things: the meeting start time and the visitor's
    email.
-2. Ask ONLY for what is missing — do not re-confirm with a widget what the
-   visitor already wrote in free text:
-   - time unknown → AskDateTime (prefill anything they hinted);
-   - time known, email unknown → AskEmail;
-   - BOTH known → go STRAIGHT to AskConfirm with the exact values.
-3. AskConfirm shows a recap card with a "Book the meeting" button. Call the
+2. The meeting time is ALWAYS confirmed through the AskDateTime widget:
+   - time not mentioned yet → AskDateTime with no prefill;
+   - time mentioned in free text → AskDateTime with prefill_start set to
+     the parsed value, so the visitor can adjust it before approving.
+   The email is different: if the visitor already wrote it in free text,
+   don't re-confirm it — use AskEmail only when the email is missing.
+3. Once the time was approved via the widget AND the email is known →
+   AskConfirm: a recap card with a "Book the meeting" button. Call the
    book_meeting tool ONLY after the visitor approves it (the "[widget]
    Confirmed — book the meeting." message). A widget decline means ask what
    to change.

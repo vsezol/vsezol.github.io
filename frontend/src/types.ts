@@ -51,9 +51,19 @@ export interface SiteConfig {
   tz_label: string;
 }
 
+export interface AdminConfig extends SiteConfig {
+  bio: string;
+}
+
 export type ChatItem =
-  | { kind: 'chips'; id: string }
-  | { kind: 'text'; id: string; role: 'user' | 'agent'; text: string }
+  | {
+      kind: 'text';
+      id: string;
+      role: 'user' | 'agent';
+      text: string;
+      /** agent message still typing out */
+      fresh?: boolean;
+    }
   | {
       kind: 'email_widget';
       id: string;

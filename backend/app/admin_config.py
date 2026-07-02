@@ -16,9 +16,8 @@ logger = logging.getLogger(__name__)
 TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 DEFAULT_GREETING = (
-    "I'm the personal AI agent of Vsevolod Zolotov — Senior AI Engineer "
-    "building LLM-powered products. Want to book a meeting? Tell me when "
-    'works for you, e.g. "tomorrow at 15:00, my email is you@example.com"'
+    "This is my AI agent — it can tell you about me\n"
+    "and book a meeting with me."
 )
 
 DEFAULT_BIO = (
@@ -66,7 +65,7 @@ def _default_schedule() -> list[DayCfg]:
 class AgentConfig(BaseModel):
     title: str = Field(default="Vsevolod's AI Agent", max_length=60)
     subtitle: str = Field(
-        default="Senior AI Engineer · books meetings for you", max_length=100
+        default="Senior AI Engineer at OTP Group", max_length=100
     )
     # Data URL (small JPEG) or None for the built-in photo
     avatar: str | None = Field(default=None, max_length=300_000)

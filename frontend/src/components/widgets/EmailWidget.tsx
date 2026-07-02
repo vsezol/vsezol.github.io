@@ -32,10 +32,14 @@ export default function EmailWidget({
       <div className="wlabel">Confirm email</div>
       <input
         className="winput"
-        value={email}
-        placeholder="you@example.com"
+        type="email"
+        name="email"
+        autoComplete="email"
         inputMode="email"
         autoCapitalize="none"
+        spellCheck={false}
+        value={email}
+        placeholder="you@example.com"
         disabled={disabled}
         onChange={(e) => {
           setEmail(e.target.value);
