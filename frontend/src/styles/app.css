@@ -706,17 +706,18 @@ textarea::placeholder {
   z-index: 5;
 }
 
-/* floats above the composer over the transcript — takes no layout space */
+/* floats above the composer over the transcript — takes no layout space;
+   width matches the composer exactly (zone has 16px side paddings) */
 .chips-row {
   position: absolute;
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  width: min(720px, 100%);
+  width: min(720px, calc(100% - 32px));
   display: flex;
   flex-wrap: nowrap;
   gap: 7px;
-  padding: 0 4px 2px;
+  padding: 0 0 2px;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
@@ -811,6 +812,13 @@ textarea::placeholder {
 
 .spacer.chatting {
   height: 14px;
+}
+
+/* on phones the composer hugs the bottom even on the hero screen */
+@media (max-width: 640px) {
+  .spacer {
+    height: 14px;
+  }
 }
 
 /* ---------- loading skeleton (before the admin config arrives) ---------- */
