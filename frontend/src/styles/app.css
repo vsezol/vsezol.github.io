@@ -745,19 +745,19 @@ textarea::placeholder {
 .composer {
   width: 100%;
   max-width: 720px;
-  background: var(--panel);
+  /* translucent panel, no drop shadow — the page shows through slightly */
+  background: rgba(19, 24, 34, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--line-10);
   border-radius: 24px;
   padding: 14px 14px 12px;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .composer.focus {
   border-color: rgba(110, 155, 255, 0.45);
-  box-shadow:
-    0 18px 50px rgba(0, 0, 0, 0.45),
-    0 0 0 4px rgba(110, 155, 255, 0.08);
+  box-shadow: 0 0 0 4px rgba(110, 155, 255, 0.08);
 }
 
 .composer-input {
