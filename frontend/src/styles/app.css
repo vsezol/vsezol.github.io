@@ -701,6 +701,9 @@ textarea::placeholder {
   align-items: center;
   padding: 8px 16px 0;
   position: relative;
+  /* above the transcript: widget cards contain z-indexed layers (wheel
+     highlight/fades) that would otherwise paint over the floating chips */
+  z-index: 5;
 }
 
 /* floats above the composer over the transcript — takes no layout space */
