@@ -5,6 +5,7 @@ const API_URL: string = import.meta.env.VITE_API_URL ?? '';
 export async function sendChat(
   message: string,
   history: unknown | null,
+  locale: string,
 ): Promise<ChatResponse> {
   const res = await fetch(`${API_URL}/api/chat`, {
     method: 'POST',
@@ -13,6 +14,7 @@ export async function sendChat(
       message,
       history,
       client_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      client_locale: locale,
     }),
   });
   if (!res.ok) {

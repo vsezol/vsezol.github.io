@@ -1,5 +1,6 @@
 import dayjs, { Dayjs } from 'dayjs';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { fmtDay } from '../../locale';
 import type { DayCfg } from '../../types';
 
 const ITEM_H = 40;
@@ -47,9 +48,20 @@ function nearestSlot(slots: string[], time: string): string {
   return best;
 }
 
+const DOW: Record<'en' | 'ru', string[]> = {
+  en: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+  ru: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+};
+
+const BTNS = {
+  en: { approve: 'Approve', decline: 'Decline' },
+  ru: { approve: 'Подтвердить', decline: 'Отклонить' },
+};
+
 interface Props {
   prefillStart: string | null;
   disabled: boolean;
+  lang?: 'en' | 'ru';
   slotMinutes: number;
   schedule: DayCfg[];
   onApprove: (startIso: string) => void;
@@ -59,6 +71,7 @@ interface Props {
 export default function DateTimeWidget({
   prefillStart,
   disabled,
+  lang = 'en',
   slotMinutes,
   schedule,
   onApprove,
@@ -182,12 +195,12 @@ export default function DateTimeWidget({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, today, schedule]);
 
-  const selLabel = `${dayjs(selDate).format('ddd, MMM D')} · ${selTime}`;
+  const selLabel = `${fmtDay(dayjs(selDate), lang)} · ${selTime}`;
 
   return (
     <div className="wcard dt">
       <div className="cal-head">
-        <div className="cal-label">{view.format('MMMM YYYY')}</div>
+        <div className="cal-label">{view.locale(lang).format('MMMM YYYY')}</div>
         <div className="cal-nav">
           <button
             type="button"
@@ -207,13 +220,9 @@ export default function DateTimeWidget({
       </div>
 
       <div className="cal-dow">
-        <span>Mo</span>
-        <span>Tu</span>
-        <span>We</span>
-        <span>Th</span>
-        <span>Fr</span>
-        <span>Sa</span>
-        <span>Su</span>
+        {DOW[lang].map((d) => (
+          <span key={d}>{d}</span>
+        ))}
       </div>
 
       <div className="cal-grid">
@@ -270,10 +279,10 @@ export default function DateTimeWidget({
             onApprove(dayjs(`${selDate}T${selTime}`).format('YYYY-MM-DDTHH:mm:ssZ'))
           }
         >
-          Approve
+          {BTNS[lang].approve}
         </button>
         <button type="button" className="btn-ghost" disabled={disabled} onClick={onDecline}>
-          Decline
+          {BTNS[lang].decline}
         </button>
       </div>
     </div>

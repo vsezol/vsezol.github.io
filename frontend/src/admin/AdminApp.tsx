@@ -36,6 +36,9 @@ export default function AdminApp() {
   const [loadError, setLoadError] = useState('');
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [saveError, setSaveError] = useState('');
+  // which language the text fields below edit (visitors see the variant
+  // matching their browser locale: ru → Russian, everything else → English)
+  const [txtLang, setTxtLang] = useState<'en' | 'ru'>('en');
   const saveTimer = useRef<number | undefined>(undefined);
 
   async function load(activeCreds: string) {
@@ -189,6 +192,8 @@ export default function AdminApp() {
           ? `Error: ${saveError}`
           : 'Save';
 
+  const ru = txtLang === 'ru';
+
   return (
     <div className="adm-wrap">
       <div className="adm-col">
@@ -200,6 +205,26 @@ export default function AdminApp() {
           <a className="adm-open-chat" href="/">
             Open chat ↗
           </a>
+        </div>
+
+        <div className="adm-langtabs">
+          <button
+            type="button"
+            className={`adm-tab${ru ? '' : ' sel'}`}
+            onClick={() => setTxtLang('en')}
+          >
+            English
+          </button>
+          <button
+            type="button"
+            className={`adm-tab${ru ? ' sel' : ''}`}
+            onClick={() => setTxtLang('ru')}
+          >
+            Русский
+          </button>
+          <span className="adm-tab-hint">
+            Texts shown to visitors with this browser language
+          </span>
         </div>
 
         <div className="adm-card">
@@ -237,8 +262,10 @@ export default function AdminApp() {
             <input
               className="adm-input"
               maxLength={60}
-              value={cfg.title}
-              onChange={(e) => patch({ title: e.target.value })}
+              value={ru ? (cfg.title_ru ?? '') : cfg.title}
+              onChange={(e) =>
+                patch(ru ? { title_ru: e.target.value } : { title: e.target.value })
+              }
             />
           </div>
           <div>
@@ -246,8 +273,14 @@ export default function AdminApp() {
             <input
               className="adm-input"
               maxLength={100}
-              value={cfg.subtitle}
-              onChange={(e) => patch({ subtitle: e.target.value })}
+              value={ru ? (cfg.subtitle_ru ?? '') : cfg.subtitle}
+              onChange={(e) =>
+                patch(
+                  ru
+                    ? { subtitle_ru: e.target.value }
+                    : { subtitle: e.target.value },
+                )
+              }
             />
           </div>
         </div>
@@ -259,8 +292,14 @@ export default function AdminApp() {
             className="adm-textarea"
             rows={4}
             maxLength={1000}
-            value={cfg.greeting}
-            onChange={(e) => patch({ greeting: e.target.value })}
+            value={ru ? (cfg.greeting_ru ?? '') : cfg.greeting}
+            onChange={(e) =>
+              patch(
+                ru
+                  ? { greeting_ru: e.target.value }
+                  : { greeting: e.target.value },
+              )
+            }
           />
         </div>
 
@@ -270,10 +309,17 @@ export default function AdminApp() {
             <div className="adm-btn-row" key={i}>
               <input
                 className="adm-input"
-                placeholder="Button label"
+                placeholder={ru ? b.label || 'Надпись кнопки' : 'Button label'}
                 maxLength={40}
-                value={b.label}
-                onChange={(e) => patchButton(i, { label: e.target.value })}
+                value={ru ? (b.label_ru ?? '') : b.label}
+                onChange={(e) =>
+                  patchButton(
+                    i,
+                    ru
+                      ? { label_ru: e.target.value }
+                      : { label: e.target.value },
+                  )
+                }
               />
               <select
                 className="adm-select"
@@ -399,7 +445,8 @@ export default function AdminApp() {
           <div className="adm-label">About me — agent knowledge base</div>
           <div className="adm-hint">
             Experience, stack, projects — the agent answers questions about you from
-            this text
+            this text. One text for all languages: the agent replies in the
+            visitor's language automatically.
           </div>
           <textarea
             className="adm-textarea"

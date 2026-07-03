@@ -87,8 +87,11 @@ def public_config() -> dict:
     return {
         "title": cfg.title,
         "subtitle": cfg.subtitle,
+        "title_ru": cfg.title_ru,
+        "subtitle_ru": cfg.subtitle_ru,
         "avatar": cfg.avatar,
         "greeting": cfg.greeting,
+        "greeting_ru": cfg.greeting_ru,
         "buttons": [b.model_dump() for b in cfg.buttons],
         "schedule": [d.model_dump() for d in cfg.schedule],
         "slot_minutes": cfg.slot_minutes,
@@ -169,7 +172,10 @@ async def chat(req: ChatRequest) -> ChatResponse:
                 history=req.history,
             )
 
-    deps = AgentDeps(client_timezone=_validate_timezone(req.client_timezone))
+    deps = AgentDeps(
+        client_timezone=_validate_timezone(req.client_timezone),
+        locale="ru" if (req.client_locale or "").lower().startswith("ru") else "en",
+    )
 
     try:
         result = await agent.run(

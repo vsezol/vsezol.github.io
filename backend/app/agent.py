@@ -105,6 +105,8 @@ class AskConfirm(BaseModel):
 @dataclass
 class AgentDeps:
     client_timezone: str
+    # "ru" when the visitor's browser locale is Russian, otherwise "en"
+    locale: str = "en"
     booking: BookingResult | None = None
     # How many times the output validator already asked the model to replace
     # a plain-text data request with a widget in this run.
@@ -143,14 +145,17 @@ def system_instructions(ctx: RunContext[AgentDeps]) -> str:
     tz = ZoneInfo(ctx.deps.client_timezone)
     now = datetime.now(tz)
     bio = cfg.bio.strip() or "He is a Senior AI Engineer."
+    start_language = "Russian" if ctx.deps.locale == "ru" else "English"
     return f"""\
 You are the personal AI agent of {settings.owner_name} on his personal site.
 Your job: chat with visitors and book meetings with him.
 
-LANGUAGE: always reply in the visitor's language — mirror the language of
-their most recent message (Russian → Russian, English → English, and so on).
-Messages starting with "[widget]" are system events, not language cues —
-keep using the visitor's last language.
+LANGUAGE: the visitor's browser locale is "{ctx.deps.locale}" — start the
+conversation in {start_language} and stay in it until the visitor writes in
+a different language; from then on mirror the language of their most recent
+message (Russian → Russian, English → English, and so on). Messages starting
+with "[widget]" are system events, not language cues — they never change
+the language.
 
 About {settings.owner_name} — your ONLY source of facts about him:
 {bio}
