@@ -167,6 +167,45 @@ def test_plain_text_time_ask_becomes_widget():
     assert r.json()["reply"]["type"] == "ask_datetime"
 
 
+def test_transient_503_is_retried():
+    from pydantic_ai.exceptions import ModelHTTPError
+
+    calls = {"n": 0}
+
+    def flaky(messages, info):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise ModelHTTPError(
+                status_code=503,
+                model_name="gemini-2.5-flash",
+                body={"error": {"status": "UNAVAILABLE"}},
+            )
+        return ModelResponse(parts=[TextPart("Recovered!")])
+
+    with booking_agent.override(model=FunctionModel(flaky)):
+        r = client.post(
+            "/api/chat", json={"message": "hi", "client_timezone": "UTC"}
+        )
+    assert r.status_code == 200
+    assert r.json()["reply"]["message"] == "Recovered!"
+    assert calls["n"] == 2
+
+
+def test_non_transient_error_fails_fast():
+    calls = {"n": 0}
+
+    def broken(messages, info):
+        calls["n"] += 1
+        raise RuntimeError("boom")
+
+    with booking_agent.override(model=FunctionModel(broken)):
+        r = client.post(
+            "/api/chat", json={"message": "hi", "client_timezone": "UTC"}
+        )
+    assert r.status_code == 502
+    assert calls["n"] == 1
+
+
 def test_message_limit():
     from pydantic_ai.messages import (
         ModelMessagesTypeAdapter,

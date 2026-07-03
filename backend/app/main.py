@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from zoneinfo import ZoneInfo
 
@@ -5,6 +6,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
+from pydantic_ai.exceptions import ModelHTTPError
 from pydantic_ai.messages import (
     ModelMessagesTypeAdapter,
     ModelRequest,
@@ -99,6 +101,21 @@ def public_config() -> dict:
     }
 
 
+# Gemini occasionally 503s ("high demand") on both the primary and the
+# fallback model at once — worth a couple of quick retries before giving up.
+TRANSIENT_STATUS = {429, 500, 502, 503, 504}
+AGENT_RUN_ATTEMPTS = 3
+RETRY_BACKOFF_SECONDS = 0.8
+
+
+def _is_transient(exc: BaseException) -> bool:
+    if isinstance(exc, ModelHTTPError):
+        return exc.status_code in TRANSIENT_STATUS
+    if isinstance(exc, BaseExceptionGroup):
+        return any(_is_transient(e) for e in exc.exceptions)
+    return False
+
+
 def _validate_timezone(tz: str | None) -> str:
     if not tz:
         return "UTC"
@@ -177,19 +194,38 @@ async def chat(req: ChatRequest) -> ChatResponse:
         locale="ru" if (req.client_locale or "").lower().startswith("ru") else "en",
     )
 
-    try:
-        result = await agent.run(
-            req.message,
-            deps=deps,
-            message_history=history,
-            usage_limits=UsageLimits(request_limit=8),
-        )
-    except Exception:
-        logger.exception("Agent run failed")
-        raise HTTPException(
-            status_code=502,
-            detail="The agent is temporarily unavailable. Please try again.",
-        )
+    result = None
+    for attempt in range(1, AGENT_RUN_ATTEMPTS + 1):
+        try:
+            result = await agent.run(
+                req.message,
+                deps=deps,
+                message_history=history,
+                usage_limits=UsageLimits(request_limit=8),
+            )
+            break
+        except Exception as exc:
+            # never re-run a conversation that already created a booking —
+            # the meeting exists, so tell the visitor instead of erroring
+            if deps.booking is not None:
+                logger.exception("Agent run failed after booking; replying booked")
+                return ChatResponse(
+                    reply=_build_reply("", deps), history=req.history or []
+                )
+            if attempt < AGENT_RUN_ATTEMPTS and _is_transient(exc):
+                logger.warning(
+                    "Transient model error (attempt %d/%d): %s",
+                    attempt,
+                    AGENT_RUN_ATTEMPTS,
+                    exc,
+                )
+                await asyncio.sleep(RETRY_BACKOFF_SECONDS * attempt)
+                continue
+            logger.exception("Agent run failed")
+            raise HTTPException(
+                status_code=502,
+                detail="The agent is temporarily unavailable. Please try again.",
+            )
 
     return ChatResponse(
         reply=_build_reply(result.output, deps),
