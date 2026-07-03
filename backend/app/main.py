@@ -14,7 +14,14 @@ from pydantic_ai.usage import UsageLimits
 
 from .admin import router as admin_router
 from .admin_config import store
-from .agent import AgentDeps, AskConfirm, AskDateTime, AskEmail, agent
+from .agent import (
+    AgentDeps,
+    AskConfirm,
+    AskDateTime,
+    AskEmail,
+    agent,
+    strip_widget_echo,
+)
 from .config import settings
 from .rate_limit import RateLimiter
 from .schemas import (
@@ -105,8 +112,8 @@ def _build_reply(
     if deps.booking is not None:
         booking = deps.booking
         message = (
-            output if isinstance(output, str) else "Your meeting is booked! 🎉"
-        )
+            strip_widget_echo(output) if isinstance(output, str) else ""
+        ) or "Your meeting is booked! 🎉"
         return BookedReply(
             message=message,
             meet_url=booking.meet_url,
@@ -115,10 +122,12 @@ def _build_reply(
             email=booking.visitor_email,
         )
     if isinstance(output, AskEmail):
-        return AskEmailReply(message=output.message, prefill=output.prefill)
+        return AskEmailReply(
+            message=strip_widget_echo(output.message), prefill=output.prefill
+        )
     if isinstance(output, AskDateTime):
         return AskDateTimeReply(
-            message=output.message,
+            message=strip_widget_echo(output.message),
             prefill_start=(
                 output.prefill_start.isoformat() if output.prefill_start else None
             ),
@@ -126,12 +135,12 @@ def _build_reply(
         )
     if isinstance(output, AskConfirm):
         return AskConfirmReply(
-            message=output.message,
+            message=strip_widget_echo(output.message),
             start=output.start.isoformat(),
             duration_minutes=output.duration_minutes,
             email=output.email,
         )
-    return TextReply(message=output)
+    return TextReply(message=strip_widget_echo(output))
 
 
 @app.post("/api/chat", response_model=ChatResponse)

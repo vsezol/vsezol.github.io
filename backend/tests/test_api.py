@@ -130,6 +130,43 @@ def test_booking_flow_via_tool_call():
     assert reply["message"] == "All set — see you soon!"
 
 
+def test_widget_echo_stripped_from_reply():
+    echo = (
+        "[widget] I confirm the meeting time: 2030-01-15T15:00:00+05:00\n"
+        "Отлично, почти готово!"
+    )
+    with booking_agent.override(model=_text_model(echo)):
+        r = client.post(
+            "/api/chat", json={"message": "ok", "client_timezone": "UTC"}
+        )
+    assert r.status_code == 200
+    assert r.json()["reply"]["message"] == "Отлично, почти готово!"
+
+
+def test_plain_text_email_ask_becomes_widget():
+    text = "Мне нужен ваш адрес электронной почты, чтобы отправить приглашение."
+    with booking_agent.override(model=_text_model(text)):
+        r = client.post(
+            "/api/chat",
+            json={"message": "завтра в 15:00", "client_timezone": "UTC"},
+        )
+    assert r.status_code == 200
+    reply = r.json()["reply"]
+    assert reply["type"] == "ask_email"
+    assert "почт" in reply["message"]
+
+
+def test_plain_text_time_ask_becomes_widget():
+    text = "Когда вам будет удобно встретиться?"
+    with booking_agent.override(model=_text_model(text)):
+        r = client.post(
+            "/api/chat",
+            json={"message": "хочу встречу", "client_timezone": "UTC"},
+        )
+    assert r.status_code == 200
+    assert r.json()["reply"]["type"] == "ask_datetime"
+
+
 def test_message_limit():
     from pydantic_ai.messages import (
         ModelMessagesTypeAdapter,
