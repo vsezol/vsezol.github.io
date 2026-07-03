@@ -26,6 +26,7 @@ from .agent import (
 )
 from .config import settings
 from .rate_limit import RateLimiter
+from .sessions import session_store
 from .schemas import (
     AskConfirmReply,
     AskDateTimeReply,
@@ -99,6 +100,42 @@ def public_config() -> dict:
         "slot_minutes": cfg.slot_minutes,
         "tz_label": cfg.tz_label,
     }
+
+
+ASK_TYPES = {"ask_email", "ask_datetime", "ask_confirm"}
+
+
+def _resolve_pending_widget(transcript: list[dict], message: str) -> None:
+    """Mark the latest unresolved widget entry with the visitor's answer.
+
+    "[widget] ..." messages answer the most recent ask_* reply; the stored
+    value lets the frontend render a summary chip on session restore.
+    """
+    for entry in reversed(transcript):
+        if entry.get("kind") != "agent":
+            continue
+        reply = entry.get("reply") or {}
+        if reply.get("type") not in ASK_TYPES:
+            continue
+        if entry.get("resolved") is None:
+            if message.startswith(
+                ("[widget] I confirm my email:", "[widget] I confirm the meeting time:")
+            ):
+                entry["resolved"] = message.split(":", 1)[1].strip()
+            elif message.startswith("[widget] Confirmed"):
+                entry["resolved"] = "booked"
+            else:
+                entry["resolved"] = "declined"
+        return
+
+
+@app.get("/api/session/{session_id}")
+def get_session(session_id: str) -> dict:
+    """Transcript of a previous conversation, for restoring the chat UI."""
+    session = session_store.load(session_id)
+    if session is None or not session.transcript:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return {"session_id": session.id, "transcript": session.transcript}
 
 
 # Gemini occasionally 503s ("high demand") on both the primary and the
@@ -177,6 +214,18 @@ async def chat(req: ChatRequest) -> ChatResponse:
         except ValidationError:
             raise HTTPException(status_code=400, detail="Invalid history payload")
 
+    # the server-held session history wins over the client copy
+    session = session_store.load(req.session_id) if req.session_id else None
+    if session is None:
+        session = session_store.create()
+    if session.history:
+        try:
+            history = ModelMessagesTypeAdapter.validate_python(session.history)
+        except ValidationError:
+            logger.warning("Corrupt history in session %s, resetting", session.id)
+            session.history = []
+
+    if history is not None:
         user_turns = sum(
             1
             for m in history
@@ -186,7 +235,8 @@ async def chat(req: ChatRequest) -> ChatResponse:
         if user_turns >= settings.max_user_messages:
             return ChatResponse(
                 reply=TextReply(message=LIMIT_REACHED_MESSAGE),
-                history=req.history,
+                history=req.history or [],
+                session_id=session.id,
             )
 
     deps = AgentDeps(
@@ -210,7 +260,9 @@ async def chat(req: ChatRequest) -> ChatResponse:
             if deps.booking is not None:
                 logger.exception("Agent run failed after booking; replying booked")
                 return ChatResponse(
-                    reply=_build_reply("", deps), history=req.history or []
+                    reply=_build_reply("", deps),
+                    history=req.history or [],
+                    session_id=session.id,
                 )
             if attempt < AGENT_RUN_ATTEMPTS and _is_transient(exc):
                 logger.warning(
@@ -227,9 +279,19 @@ async def chat(req: ChatRequest) -> ChatResponse:
                 detail="The agent is temporarily unavailable. Please try again.",
             )
 
-    return ChatResponse(
-        reply=_build_reply(result.output, deps),
-        history=ModelMessagesTypeAdapter.dump_python(
-            result.all_messages(), mode="json"
-        ),
+    reply = _build_reply(result.output, deps)
+
+    session.history = ModelMessagesTypeAdapter.dump_python(
+        result.all_messages(), mode="json"
     )
+    if req.message.startswith("[widget]"):
+        _resolve_pending_widget(session.transcript, req.message)
+    else:
+        session.transcript.append({"kind": "user", "text": req.message})
+    session.transcript.append(
+        {"kind": "agent", "reply": reply.model_dump(), "resolved": None}
+    )
+    session_store.save(session)
+    session_store.sweep()
+
+    return ChatResponse(reply=reply, history=session.history, session_id=session.id)

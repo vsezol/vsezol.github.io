@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     max_history_messages: int = 120
     # Hard cap of visitor messages per conversation (token protection)
     max_user_messages: int = 20
+    # Sessions idle longer than this are dropped
+    session_ttl_days: int = 7
 
     # Admin API auth (HTTP Basic; the admin UI lives in the site SPA at /#admin)
     admin_user: str = "admin"

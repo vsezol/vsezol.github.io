@@ -814,6 +814,25 @@ textarea::placeholder {
 }
 
 /* ---------- loading skeleton (before the admin config arrives) ---------- */
+/* the entrance animation plays only when the real content lands: the
+   skeleton renders statically, and dropping this class restarts heroIn */
+.hero.hero-loading {
+  animation: none;
+}
+
+.chip {
+  animation: chipIn 0.3s ease;
+}
+
+@keyframes chipIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .skel {
   background: linear-gradient(
     90deg,
@@ -870,4 +889,14 @@ textarea::placeholder {
   width: 108px;
   height: 31px;
   border-radius: 999px;
+}
+
+.skel-title-sm {
+  width: 150px;
+  height: 18px;
+}
+
+.skel-sub-sm {
+  width: 180px;
+  height: 11px;
 }
