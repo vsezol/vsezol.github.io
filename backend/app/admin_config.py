@@ -20,6 +20,11 @@ DEFAULT_GREETING = (
     "and book a meeting with me."
 )
 
+DEFAULT_GREETING_RU = (
+    "Это мой AI-агент — он может рассказать обо мне\n"
+    "и записать вас на встречу со мной."
+)
+
 DEFAULT_BIO = (
     "Vsevolod Zolotov is a Senior AI Engineer who builds LLM-powered "
     "products and agents."
@@ -28,6 +33,8 @@ DEFAULT_BIO = (
 
 class ButtonCfg(BaseModel):
     label: str = Field(max_length=40)
+    # Russian label; empty string means "same as `label`"
+    label_ru: str = Field(default="", max_length=40)
     kind: Literal["link", "about"] = "link"
     url: str = Field(default="", max_length=300)
 
@@ -47,7 +54,7 @@ class DayCfg(BaseModel):
 
 def _default_buttons() -> list[ButtonCfg]:
     return [
-        ButtonCfg(label="About Vsevolod", kind="about"),
+        ButtonCfg(label="About Vsevolod", label_ru="О Всеволоде", kind="about"),
         ButtonCfg(label="GitHub ↗", kind="link", url="https://github.com/vsezol"),
         ButtonCfg(
             label="LinkedIn ↗", kind="link", url="https://www.linkedin.com/in/vsezol"
@@ -67,9 +74,15 @@ class AgentConfig(BaseModel):
     subtitle: str = Field(
         default="Senior AI Engineer at OTP Group", max_length=100
     )
+    # Russian variants shown when the browser locale is Russian
+    title_ru: str = Field(default="Привет, я Всеволод", max_length=60)
+    subtitle_ru: str = Field(
+        default="Senior AI Engineer в OTP Group", max_length=100
+    )
     # Data URL (small JPEG) or None for the built-in photo
     avatar: str | None = Field(default=None, max_length=300_000)
     greeting: str = Field(default=DEFAULT_GREETING, max_length=1000)
+    greeting_ru: str = Field(default=DEFAULT_GREETING_RU, max_length=1000)
     bio: str = Field(default=DEFAULT_BIO, max_length=8000)
     buttons: list[ButtonCfg] = Field(default_factory=_default_buttons, max_length=8)
     schedule: list[DayCfg] = Field(default_factory=_default_schedule)

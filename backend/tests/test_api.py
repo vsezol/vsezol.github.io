@@ -192,9 +192,46 @@ def test_public_config():
     assert r.status_code == 200
     data = r.json()
     assert data["title"]
+    assert data["title_ru"]
+    assert data["greeting_ru"]
     assert len(data["schedule"]) == 7
     assert data["slot_minutes"] in (15, 30, 45, 60)
     assert isinstance(data["buttons"], list)
+    assert all("label_ru" in b for b in data["buttons"])
+
+
+def test_client_locale_sets_start_language():
+    seen = {}
+
+    def capture(messages, info):
+        seen["instructions"] = next(
+            (m.instructions for m in messages if getattr(m, "instructions", None)),
+            "",
+        )
+        return ModelResponse(parts=[TextPart("Привет!")])
+
+    with booking_agent.override(model=FunctionModel(capture)):
+        r = client.post(
+            "/api/chat",
+            json={
+                "message": "hello",
+                "client_timezone": "UTC",
+                "client_locale": "ru-RU",
+            },
+        )
+    assert r.status_code == 200
+    assert "start the\nconversation in Russian" in seen["instructions"]
+
+    with booking_agent.override(model=FunctionModel(capture)):
+        client.post(
+            "/api/chat",
+            json={
+                "message": "hello",
+                "client_timezone": "UTC",
+                "client_locale": "de-DE",
+            },
+        )
+    assert "start the\nconversation in English" in seen["instructions"]
 
 
 def test_admin_requires_auth():

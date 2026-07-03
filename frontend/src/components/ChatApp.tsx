@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
 import { fetchConfig, sendChat } from '../api';
+import { LOCALE, fmtDay, pickText } from '../locale';
 import type { AgentReply, ChatItem, SiteConfig } from '../types';
 import StreamingText from './StreamingText';
 import ConfirmCard from './widgets/ConfirmCard';
@@ -11,11 +12,15 @@ import SuccessCard from './widgets/SuccessCard';
 const DEFAULT_CONFIG: SiteConfig = {
   title: "Hi, I'm Vsevolod",
   subtitle: 'Senior AI Engineer at OTP Group',
+  title_ru: 'Привет, я Всеволод',
+  subtitle_ru: 'Senior AI Engineer в OTP Group',
   avatar: null,
   greeting:
     'This is my AI agent — it can tell you about me\nand book a meeting with me.',
+  greeting_ru:
+    'Это мой AI-агент — он может рассказать обо мне\nи записать вас на встречу со мной.',
   buttons: [
-    { label: 'About Vsevolod', kind: 'about', url: '' },
+    { label: 'About Vsevolod', label_ru: 'О Всеволоде', kind: 'about', url: '' },
     { label: 'GitHub ↗', kind: 'link', url: 'https://github.com/vsezol' },
     { label: 'LinkedIn ↗', kind: 'link', url: 'https://www.linkedin.com/in/vsezol' },
     { label: 'Telegram ↗', kind: 'link', url: 'https://t.me/vsezol' },
@@ -25,13 +30,22 @@ const DEFAULT_CONFIG: SiteConfig = {
   tz_label: '',
 };
 
-const PLACEHOLDERS = [
-  'Tell me about Vsevolod',
-  "Let's meet tomorrow at 4 pm",
-  'Book a call on Friday at 11:00',
-  'I want to talk to Seva — my email is you@example.com',
-  'What does Vsevolod work on?',
-];
+const PLACEHOLDERS: Record<'en' | 'ru', string[]> = {
+  en: [
+    'Tell me about Vsevolod',
+    "Let's meet tomorrow at 4 pm",
+    'Book a call on Friday at 11:00',
+    'I want to talk to Seva — my email is you@example.com',
+    'What does Vsevolod work on?',
+  ],
+  ru: [
+    'Расскажи о Всеволоде',
+    'Давай встретимся завтра в 16:00',
+    'Забронируй звонок в пятницу в 11:00',
+    'Хочу поговорить с Севой — моя почта you@example.com',
+    'Над чем работает Всеволод?',
+  ],
+};
 
 const PHRASES: Record<'en' | 'ru', string[]> = {
   en: [
@@ -64,7 +78,7 @@ export default function ChatApp() {
   const [busy, setBusy] = useState(false);
   const [started, setStarted] = useState(false);
   const [focus, setFocus] = useState(false);
-  const [lang, setLang] = useState<'en' | 'ru'>('en');
+  const [lang, setLang] = useState<'en' | 'ru'>(LOCALE);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const historyRef = useRef<unknown | null>(null);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -129,14 +143,17 @@ export default function ChatApp() {
     const text = message.trim();
     if (!text) return;
     setStarted(true);
-    if (/[а-яё]/i.test(text)) setLang('ru');
-    else if (/[a-z]/i.test(text)) setLang('en');
+    // widget events are internal English strings — not a language signal
+    if (!text.startsWith('[widget]')) {
+      if (/[а-яё]/i.test(text)) setLang('ru');
+      else if (/[a-z]/i.test(text)) setLang('en');
+    }
     if (bubble) {
       append({ kind: 'text', id: uid(), role: 'user', text: bubble });
     }
     setBusy(true);
     try {
-      const { reply, history } = await sendChat(text, historyRef.current);
+      const { reply, history } = await sendChat(text, historyRef.current, LOCALE);
       historyRef.current = history;
       const textItem: ChatItem = {
         kind: 'text',
@@ -239,6 +256,7 @@ export default function ChatApp() {
               <EmailWidget
                 prefill={item.prefill}
                 disabled={busy}
+                lang={lang}
                 onApprove={(email) => {
                   resolveWidget(item.id, email);
                   void send(`[widget] I confirm my email: ${email}`, null);
@@ -260,12 +278,13 @@ export default function ChatApp() {
               <DateTimeWidget
                 prefillStart={item.prefillStart}
                 disabled={busy}
+                lang={lang}
                 slotMinutes={config.slot_minutes}
                 schedule={config.schedule}
                 onApprove={(startIso) => {
                   resolveWidget(
                     item.id,
-                    dayjs(startIso).format('ddd, MMM D · HH:mm'),
+                    `${fmtDay(dayjs(startIso), lang)} · ${dayjs(startIso).format('HH:mm')}`,
                   );
                   void send(
                     `[widget] I confirm the meeting time: ${startIso}`,
@@ -292,6 +311,7 @@ export default function ChatApp() {
                 email={item.email}
                 tzLabel={config.tz_label}
                 disabled={busy}
+                lang={lang}
                 onBook={() => {
                   resolveWidget(
                     item.id,
@@ -334,22 +354,27 @@ export default function ChatApp() {
   const avatarUrl = config.avatar ?? '/my-avatar.webp';
   const canSend = Boolean(draft.trim()) && !busy;
 
-  const chips = config.buttons.map((b, i) =>
-    b.kind === 'link' ? (
+  const title = pickText(config.title, config.title_ru);
+  const subtitle = pickText(config.subtitle, config.subtitle_ru);
+  const greeting = pickText(config.greeting, config.greeting_ru);
+
+  const chips = config.buttons.map((b, i) => {
+    const label = pickText(b.label, b.label_ru);
+    return b.kind === 'link' ? (
       <a key={i} className="chip" href={b.url} target="_blank" rel="noreferrer">
-        {b.label}
+        {label}
       </a>
     ) : (
       <button
         key={i}
         type="button"
         className="chip"
-        onClick={() => void send(b.label)}
+        onClick={() => void send(label)}
       >
-        {b.label}
+        {label}
       </button>
-    ),
-  );
+    );
+  });
 
   return (
     <div className="app">
@@ -363,9 +388,9 @@ export default function ChatApp() {
                 style={{ backgroundImage: `url("${avatarUrl}")` }}
               />
             </div>
-            <h1 className="hero-title">{config.title}</h1>
-            <div className="hero-sub">{config.subtitle}</div>
-            <p className="hero-intro">{config.greeting}</p>
+            <h1 className="hero-title">{title}</h1>
+            <div className="hero-sub">{subtitle}</div>
+            <p className="hero-intro">{greeting}</p>
           </div>
         ) : (
           <div className="thread">
@@ -375,8 +400,8 @@ export default function ChatApp() {
                 style={{ backgroundImage: `url("${avatarUrl}")` }}
               />
               <div className="thread-intro-info">
-                <div className="thread-intro-title">{config.title}</div>
-                <div className="thread-intro-sub">{config.subtitle}</div>
+                <div className="thread-intro-title">{title}</div>
+                <div className="thread-intro-sub">{subtitle}</div>
               </div>
             </div>
             {items.map(renderItem)}
@@ -393,8 +418,10 @@ export default function ChatApp() {
             value={draft}
             placeholder={
               started
-                ? 'Message the agent…'
-                : PLACEHOLDERS[placeholderIdx % PLACEHOLDERS.length]
+                ? LOCALE === 'ru'
+                  ? 'Напишите агенту…'
+                  : 'Message the agent…'
+                : PLACEHOLDERS[LOCALE][placeholderIdx % PLACEHOLDERS[LOCALE].length]
             }
             onChange={(e) => setDraft(e.target.value)}
             onFocus={() => setFocus(true)}

@@ -30,6 +30,8 @@ export interface ChatResponse {
 
 export interface ButtonCfg {
   label: string;
+  /** Russian label; empty means "same as label" */
+  label_ru?: string;
   kind: 'link' | 'about';
   url: string;
 }
@@ -43,8 +45,11 @@ export interface DayCfg {
 export interface SiteConfig {
   title: string;
   subtitle: string;
+  title_ru?: string;
+  subtitle_ru?: string;
   avatar: string | null;
   greeting: string;
+  greeting_ru?: string;
   buttons: ButtonCfg[];
   schedule: DayCfg[];
   slot_minutes: number;

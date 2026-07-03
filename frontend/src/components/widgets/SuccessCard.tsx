@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
+import { fmtDay } from '../../locale';
 
 interface Props {
   meetUrl: string;
@@ -14,7 +15,7 @@ export default function SuccessCard({ meetUrl, start, email, lang = 'en' }: Prop
 
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  const when = dayjs(start).format('ddd, MMM D · HH:mm');
+  const when = `${fmtDay(dayjs(start), lang)} · ${dayjs(start).format('HH:mm')}`;
   const displayUrl = meetUrl.replace(/^https?:\/\//, '');
 
   function copy() {
@@ -32,7 +33,9 @@ export default function SuccessCard({ meetUrl, start, email, lang = 'en' }: Prop
     <div className="success-card">
       <div className="success-head">
         <span className="success-check">✓</span>
-        <span className="success-title">Meeting booked</span>
+        <span className="success-title">
+          {lang === 'ru' ? 'Встреча забронирована' : 'Meeting booked'}
+        </span>
       </div>
       <div className="success-text">
         {lang === 'ru'
