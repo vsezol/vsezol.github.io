@@ -1,0 +1,50 @@
+{
+  "chat": {
+    "inputPlaceholder": "Message the agent…",
+    "error": "Something went wrong. Please try again.",
+    "placeholders": [
+      "Tell me about Vsevolod",
+      "Let's meet tomorrow at 4 pm",
+      "Book a call on Friday at 11:00",
+      "I want to talk to Seva — my email is you@example.com",
+      "What does Vsevolod work on?"
+    ],
+    "typing": [
+      "Asking Vsevolod",
+      "Talking to Vsevolod",
+      "Checking his calendar",
+      "Pinging Vsevolod",
+      "Reading his schedule",
+      "Waking Vsevolod up",
+      "Negotiating a slot"
+    ]
+  },
+  "summary": {
+    "declined": "Declined",
+    "booked": "Booked"
+  },
+  "widget": {
+    "approve": "Approve",
+    "decline": "Decline"
+  },
+  "email": {
+    "label": "Confirm email",
+    "invalid": "Hmm, that doesn't look like a valid email",
+    "placeholder": "you@example.com"
+  },
+  "datetime": {
+    "dow": ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
+  },
+  "confirm": {
+    "title": "Meeting with Vsevolod Zolotov",
+    "when": "When",
+    "timezone": "Timezone",
+    "guest": "Guest",
+    "where": "Where",
+    "book": "Book the meeting"
+  },
+  "success": {
+    "title": "Meeting booked",
+    "text": "{{when}} — invitations sent to {{email}} and Vsevolod's calendar."
+  }
+}

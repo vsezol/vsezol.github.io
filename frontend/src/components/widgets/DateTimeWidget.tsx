@@ -1,5 +1,6 @@
 import dayjs, { Dayjs } from 'dayjs';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import i18n from '../../i18n';
 import { fmtDay } from '../../locale';
 import type { DayCfg } from '../../types';
 
@@ -48,16 +49,6 @@ function nearestSlot(slots: string[], time: string): string {
   return best;
 }
 
-const DOW: Record<'en' | 'ru', string[]> = {
-  en: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
-  ru: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
-};
-
-const BTNS = {
-  en: { approve: 'Approve', decline: 'Decline' },
-  ru: { approve: 'Подтвердить', decline: 'Отклонить' },
-};
-
 interface Props {
   prefillStart: string | null;
   disabled: boolean;
@@ -77,6 +68,7 @@ export default function DateTimeWidget({
   onApprove,
   onDecline,
 }: Props) {
+  const t = i18n.getFixedT(lang);
   const today = dayjs().startOf('day');
 
   const dayOff = (d: Dayjs) =>
@@ -220,7 +212,7 @@ export default function DateTimeWidget({
       </div>
 
       <div className="cal-dow">
-        {DOW[lang].map((d) => (
+        {(t('datetime.dow', { returnObjects: true }) as string[]).map((d) => (
           <span key={d}>{d}</span>
         ))}
       </div>
@@ -279,10 +271,10 @@ export default function DateTimeWidget({
             onApprove(dayjs(`${selDate}T${selTime}`).format('YYYY-MM-DDTHH:mm:ssZ'))
           }
         >
-          {BTNS[lang].approve}
+          {t('widget.approve')}
         </button>
         <button type="button" className="btn-ghost" disabled={disabled} onClick={onDecline}>
-          {BTNS[lang].decline}
+          {t('widget.decline')}
         </button>
       </div>
     </div>

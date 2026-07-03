@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
+import i18n from '../../i18n';
 import { fmtDay } from '../../locale';
 
 interface Props {
@@ -15,6 +16,7 @@ export default function SuccessCard({ meetUrl, start, email, lang = 'en' }: Prop
 
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
+  const t = i18n.getFixedT(lang);
   const when = `${fmtDay(dayjs(start), lang)} · ${dayjs(start).format('HH:mm')}`;
   const displayUrl = meetUrl.replace(/^https?:\/\//, '');
 
@@ -33,14 +35,10 @@ export default function SuccessCard({ meetUrl, start, email, lang = 'en' }: Prop
     <div className="success-card">
       <div className="success-head">
         <span className="success-check">✓</span>
-        <span className="success-title">
-          {lang === 'ru' ? 'Встреча забронирована' : 'Meeting booked'}
-        </span>
+        <span className="success-title">{t('success.title')}</span>
       </div>
       <div className="success-text">
-        {lang === 'ru'
-          ? `${when} — приглашения отправлены на ${email} и в календарь Всеволода.`
-          : `${when} — invitations sent to ${email} and Vsevolod's calendar.`}
+        {t('success.text', { when, email })}
       </div>
       <button type="button" className="copy-btn" onClick={copy}>
         <span className="copy-url">{displayUrl}</span>
