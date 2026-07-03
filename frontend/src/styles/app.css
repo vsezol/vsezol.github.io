@@ -725,7 +725,11 @@ textarea::placeholder {
   font: 500 12px var(--font);
   color: var(--text-2);
   padding: 7px 12px;
-  background: transparent;
+  /* solid pill so transcript text scrolling underneath stays unreadable
+     through it; the row itself has no backdrop */
+  background: rgba(14, 18, 26, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--line-12);
   border-radius: 999px;
   cursor: pointer;
