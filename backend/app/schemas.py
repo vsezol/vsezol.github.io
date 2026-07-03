@@ -9,6 +9,8 @@ class ChatRequest(BaseModel):
     client_timezone: str | None = None
     # Browser locale, e.g. "ru-RU" — sets the language the agent starts in
     client_locale: str | None = None
+    # Server-side session to resume; a new one is created when absent/expired
+    session_id: str | None = Field(default=None, max_length=64)
 
 
 class TextReply(BaseModel):
@@ -57,3 +59,4 @@ Reply = Annotated[
 class ChatResponse(BaseModel):
     reply: Reply
     history: list[Any]
+    session_id: str | None = None

@@ -26,6 +26,16 @@ export type AgentReply =
 export interface ChatResponse {
   reply: AgentReply;
   history: unknown;
+  session_id?: string | null;
+}
+
+export type TranscriptEntry =
+  | { kind: 'user'; text: string }
+  | { kind: 'agent'; reply: AgentReply; resolved?: string | null };
+
+export interface SessionResponse {
+  session_id: string;
+  transcript: TranscriptEntry[];
 }
 
 export interface ButtonCfg {

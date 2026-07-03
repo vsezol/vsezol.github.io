@@ -1,10 +1,15 @@
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { fetchConfig, sendChat } from '../api';
+import { fetchConfig, fetchSession, sendChat } from '../api';
 import i18n from '../i18n';
 import { LOCALE, fmtDay, pickText } from '../locale';
-import type { AgentReply, ChatItem, SiteConfig } from '../types';
+import type {
+  AgentReply,
+  ChatItem,
+  SiteConfig,
+  TranscriptEntry,
+} from '../types';
 import StreamingText from './StreamingText';
 import ConfirmCard from './widgets/ConfirmCard';
 import DateTimeWidget from './widgets/DateTimeWidget';
@@ -36,6 +41,33 @@ const FALLBACK_CONFIG: SiteConfig = {
 
 const CONFIG_FETCH_ATTEMPTS = 3;
 
+const SESSION_KEY = 'agent-session-id';
+
+// localStorage can throw (private mode / storage disabled)
+function readSessionId(): string | null {
+  try {
+    return localStorage.getItem(SESSION_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionId(id: string): void {
+  try {
+    localStorage.setItem(SESSION_KEY, id);
+  } catch {
+    /* not persisted — the conversation still works within this tab */
+  }
+}
+
+function clearSessionId(): void {
+  try {
+    localStorage.removeItem(SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 let nextId = 0;
 const uid = () => `item-${nextId++}`;
 
@@ -50,11 +82,67 @@ export default function ChatApp() {
   const [lang, setLang] = useState<'en' | 'ru'>(LOCALE);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const historyRef = useRef<unknown | null>(null);
+  const sessionRef = useRef<string | null>(readSessionId());
   const chatRef = useRef<HTMLDivElement>(null);
   const pendingRef = useRef<{ afterId: string; item: ChatItem } | null>(null);
 
   // conversation-language translator (may differ from the UI locale)
   const tl = i18n.getFixedT(lang);
+
+  // restore a previous conversation from the server-side session
+  useEffect(() => {
+    const id = sessionRef.current;
+    if (!id) return;
+    let alive = true;
+    fetchSession(id)
+      .then(({ transcript }) => {
+        if (!alive || !transcript.length) return;
+        setItems(transcript.flatMap(entryToItems));
+        setStarted(true);
+      })
+      .catch(() => {
+        // expired or unknown — start fresh
+        sessionRef.current = null;
+        clearSessionId();
+      });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function entryToItems(entry: TranscriptEntry): ChatItem[] {
+    if (entry.kind === 'user') {
+      return [{ kind: 'text', id: uid(), role: 'user', text: entry.text }];
+    }
+    const out: ChatItem[] = [
+      {
+        kind: 'text',
+        id: uid(),
+        role: 'agent',
+        text: entry.reply.message,
+        fresh: false,
+      },
+    ];
+    const widget = widgetFor(entry.reply);
+    if (widget) {
+      if ('resolved' in widget && entry.resolved) {
+        widget.resolved = restoredSummary(entry.reply.type, entry.resolved);
+      }
+      out.push(widget);
+    }
+    return out;
+  }
+
+  function restoredSummary(replyType: AgentReply['type'], resolved: string): string {
+    if (resolved === 'declined') return tl('summary.declined');
+    if (resolved === 'booked') return tl('summary.booked');
+    if (replyType === 'ask_datetime') {
+      const d = dayjs(resolved);
+      return `${fmtDay(d, lang)} · ${d.format('HH:mm')}`;
+    }
+    return resolved; // the confirmed email
+  }
 
   useEffect(() => {
     let alive = true;
@@ -138,8 +226,17 @@ export default function ChatApp() {
     }
     setBusy(true);
     try {
-      const { reply, history } = await sendChat(text, historyRef.current, LOCALE);
+      const { reply, history, session_id } = await sendChat(
+        text,
+        historyRef.current,
+        LOCALE,
+        sessionRef.current,
+      );
       historyRef.current = history;
+      if (session_id && session_id !== sessionRef.current) {
+        sessionRef.current = session_id;
+        writeSessionId(session_id);
+      }
       const textItem: ChatItem = {
         kind: 'text',
         id: uid(),
@@ -380,7 +477,7 @@ export default function ChatApp() {
               <p className="hero-intro">{greeting}</p>
             </div>
           ) : (
-            <div className="hero">
+            <div className="hero hero-loading">
               <div className="skel skel-avatar" />
               <div className="skel skel-title" />
               <div className="skel skel-sub" />
@@ -395,10 +492,17 @@ export default function ChatApp() {
                 className="thread-avatar"
                 style={{ backgroundImage: `url("${avatarUrl}")` }}
               />
-              <div className="thread-intro-info">
-                <div className="thread-intro-title">{title}</div>
-                <div className="thread-intro-sub">{subtitle}</div>
-              </div>
+              {config ? (
+                <div className="thread-intro-info">
+                  <div className="thread-intro-title">{title}</div>
+                  <div className="thread-intro-sub">{subtitle}</div>
+                </div>
+              ) : (
+                <div className="thread-intro-info">
+                  <span className="skel skel-title-sm" />
+                  <span className="skel skel-sub-sm" />
+                </div>
+              )}
             </div>
             {items.map(renderItem)}
             {busy && <TypingIndicator lang={lang} />}

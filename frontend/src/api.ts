@@ -1,4 +1,4 @@
-import type { ChatResponse, SiteConfig } from './types';
+import type { ChatResponse, SessionResponse, SiteConfig } from './types';
 
 const API_URL: string = import.meta.env.VITE_API_URL ?? '';
 
@@ -9,6 +9,7 @@ export async function sendChat(
   message: string,
   history: unknown | null,
   locale: string,
+  sessionId: string | null,
 ): Promise<ChatResponse> {
   const post = () =>
     fetch(`${API_URL}/api/chat`, {
@@ -19,6 +20,7 @@ export async function sendChat(
         history,
         client_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         client_locale: locale,
+        session_id: sessionId,
       }),
     });
 
@@ -29,6 +31,14 @@ export async function sendChat(
   }
   if (!res.ok) {
     throw new Error(`Request failed with status ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchSession(sessionId: string): Promise<SessionResponse> {
+  const res = await fetch(`${API_URL}/api/session/${sessionId}`);
+  if (!res.ok) {
+    throw new Error(`Session request failed with status ${res.status}`);
   }
   return res.json();
 }

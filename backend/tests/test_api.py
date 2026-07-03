@@ -167,6 +167,106 @@ def test_plain_text_time_ask_becomes_widget():
     assert r.json()["reply"]["type"] == "ask_datetime"
 
 
+def _counting_model():
+    from pydantic_ai.messages import ModelRequest as MReq
+    from pydantic_ai.messages import UserPromptPart as UPart
+
+    def fn(messages, info):
+        n = sum(
+            1
+            for m in messages
+            if isinstance(m, MReq) and any(isinstance(p, UPart) for p in m.parts)
+        )
+        return ModelResponse(parts=[TextPart(f"turn {n}")])
+
+    return FunctionModel(fn)
+
+
+def test_session_keeps_context_server_side():
+    with booking_agent.override(model=_counting_model()):
+        r1 = client.post(
+            "/api/chat", json={"message": "hello", "client_timezone": "UTC"}
+        )
+        sid = r1.json()["session_id"]
+        assert sid
+        assert r1.json()["reply"]["message"] == "turn 1"
+
+        # no client history at all — context comes from the server session
+        r2 = client.post(
+            "/api/chat",
+            json={"message": "again", "session_id": sid, "client_timezone": "UTC"},
+        )
+    assert r2.json()["session_id"] == sid
+    assert r2.json()["reply"]["message"] == "turn 2"
+
+    r3 = client.get(f"/api/session/{sid}")
+    assert r3.status_code == 200
+    transcript = r3.json()["transcript"]
+    assert [e["kind"] for e in transcript] == ["user", "agent", "user", "agent"]
+    assert transcript[0]["text"] == "hello"
+
+    assert client.get("/api/session/" + "0" * 32).status_code == 404
+
+
+def test_widget_messages_resolve_transcript_entries():
+    from app.main import _resolve_pending_widget
+
+    transcript = [
+        {"kind": "user", "text": "book me"},
+        {"kind": "agent", "reply": {"type": "ask_email", "message": "?"}, "resolved": None},
+    ]
+    _resolve_pending_widget(transcript, "[widget] I confirm my email: a@b.co")
+    assert transcript[1]["resolved"] == "a@b.co"
+
+    transcript.append(
+        {
+            "kind": "agent",
+            "reply": {"type": "ask_datetime", "message": "?"},
+            "resolved": None,
+        }
+    )
+    _resolve_pending_widget(
+        transcript, "[widget] I confirm the meeting time: 2030-01-15T15:00:00+03:00"
+    )
+    assert transcript[2]["resolved"] == "2030-01-15T15:00:00+03:00"
+
+    transcript.append(
+        {
+            "kind": "agent",
+            "reply": {"type": "ask_confirm", "message": "?"},
+            "resolved": None,
+        }
+    )
+    _resolve_pending_widget(transcript, "[widget] I declined the booking confirmation.")
+    assert transcript[3]["resolved"] == "declined"
+
+
+def test_expired_session_is_dropped():
+    import json as jsonlib
+    from datetime import datetime, timedelta, timezone
+
+    from app.sessions import session_store
+
+    with booking_agent.override(model=_text_model("hi")):
+        r = client.post("/api/chat", json={"message": "hi", "client_timezone": "UTC"})
+    sid = r.json()["session_id"]
+
+    path = session_store._path(sid)
+    data = jsonlib.loads(path.read_text(encoding="utf-8"))
+    data["last_active"] = (
+        datetime.now(timezone.utc) - timedelta(days=8)
+    ).isoformat()
+    path.write_text(jsonlib.dumps(data), encoding="utf-8")
+
+    assert client.get(f"/api/session/{sid}").status_code == 404
+    assert not path.exists()
+
+    # sweep removes stale files too
+    path.write_text(jsonlib.dumps(data), encoding="utf-8")
+    session_store.sweep(force=True)
+    assert not path.exists()
+
+
 def test_transient_503_is_retried():
     from pydantic_ai.exceptions import ModelHTTPError
 
