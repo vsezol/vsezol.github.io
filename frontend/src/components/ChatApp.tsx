@@ -1,6 +1,8 @@
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { fetchConfig, sendChat } from '../api';
+import i18n from '../i18n';
 import { LOCALE, fmtDay, pickText } from '../locale';
 import type { AgentReply, ChatItem, SiteConfig } from '../types';
 import StreamingText from './StreamingText';
@@ -9,7 +11,9 @@ import DateTimeWidget from './widgets/DateTimeWidget';
 import EmailWidget from './widgets/EmailWidget';
 import SuccessCard from './widgets/SuccessCard';
 
-const DEFAULT_CONFIG: SiteConfig = {
+// shown only if the config request fails repeatedly — normally the UI
+// keeps a skeleton until the admin-managed texts arrive
+const FALLBACK_CONFIG: SiteConfig = {
   title: "Hi, I'm Vsevolod",
   subtitle: 'Senior AI Engineer at OTP Group',
   title_ru: 'Привет, я Всеволод',
@@ -30,49 +34,14 @@ const DEFAULT_CONFIG: SiteConfig = {
   tz_label: '',
 };
 
-const PLACEHOLDERS: Record<'en' | 'ru', string[]> = {
-  en: [
-    'Tell me about Vsevolod',
-    "Let's meet tomorrow at 4 pm",
-    'Book a call on Friday at 11:00',
-    'I want to talk to Seva — my email is you@example.com',
-    'What does Vsevolod work on?',
-  ],
-  ru: [
-    'Расскажи о Всеволоде',
-    'Давай встретимся завтра в 16:00',
-    'Забронируй звонок в пятницу в 11:00',
-    'Хочу поговорить с Севой — моя почта you@example.com',
-    'Над чем работает Всеволод?',
-  ],
-};
-
-const PHRASES: Record<'en' | 'ru', string[]> = {
-  en: [
-    'Asking Vsevolod',
-    'Talking to Vsevolod',
-    'Checking his calendar',
-    'Pinging Vsevolod',
-    'Reading his schedule',
-    'Waking Vsevolod up',
-    'Negotiating a slot',
-  ],
-  ru: [
-    'Спрашиваю Всеволода',
-    'Связываюсь с Всеволодом',
-    'Смотрю его календарь',
-    'Обсуждаю с Всеволодом',
-    'Сверяю расписание',
-    'Бужу Всеволода',
-    'Согласовываю слот',
-  ],
-};
+const CONFIG_FETCH_ATTEMPTS = 3;
 
 let nextId = 0;
 const uid = () => `item-${nextId++}`;
 
 export default function ChatApp() {
-  const [config, setConfig] = useState<SiteConfig>(DEFAULT_CONFIG);
+  const { t } = useTranslation();
+  const [config, setConfig] = useState<SiteConfig | null>(null);
   const [items, setItems] = useState<ChatItem[]>([]);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
@@ -84,10 +53,26 @@ export default function ChatApp() {
   const chatRef = useRef<HTMLDivElement>(null);
   const pendingRef = useRef<{ afterId: string; item: ChatItem } | null>(null);
 
+  // conversation-language translator (may differ from the UI locale)
+  const tl = i18n.getFixedT(lang);
+
   useEffect(() => {
-    fetchConfig()
-      .then(setConfig)
-      .catch(() => undefined);
+    let alive = true;
+    void (async () => {
+      for (let attempt = 1; attempt <= CONFIG_FETCH_ATTEMPTS; attempt++) {
+        try {
+          const cfg = await fetchConfig();
+          if (alive) setConfig(cfg);
+          return;
+        } catch {
+          await new Promise((r) => setTimeout(r, 800 * attempt));
+        }
+      }
+      if (alive) setConfig(FALLBACK_CONFIG);
+    })();
+    return () => {
+      alive = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -168,14 +153,7 @@ export default function ChatApp() {
       }
       append(textItem);
     } catch {
-      append({
-        kind: 'error',
-        id: uid(),
-        text:
-          lang === 'ru'
-            ? 'Что-то пошло не так. Попробуйте ещё раз.'
-            : 'Something went wrong. Please try again.',
-      });
+      append({ kind: 'error', id: uid(), text: tl('chat.error') });
     } finally {
       setBusy(false);
     }
@@ -262,7 +240,7 @@ export default function ChatApp() {
                   void send(`[widget] I confirm my email: ${email}`, null);
                 }}
                 onDecline={() => {
-                  resolveWidget(item.id, lang === 'ru' ? 'Отклонено' : 'Declined');
+                  resolveWidget(item.id, tl('summary.declined'));
                   void send("[widget] I don't want to share this email.", null);
                 }}
               />
@@ -279,8 +257,8 @@ export default function ChatApp() {
                 prefillStart={item.prefillStart}
                 disabled={busy}
                 lang={lang}
-                slotMinutes={config.slot_minutes}
-                schedule={config.schedule}
+                slotMinutes={cfg.slot_minutes}
+                schedule={cfg.schedule}
                 onApprove={(startIso) => {
                   resolveWidget(
                     item.id,
@@ -292,7 +270,7 @@ export default function ChatApp() {
                   );
                 }}
                 onDecline={() => {
-                  resolveWidget(item.id, lang === 'ru' ? 'Отклонено' : 'Declined');
+                  resolveWidget(item.id, tl('summary.declined'));
                   void send("[widget] That time doesn't work for me.", null);
                 }}
               />
@@ -309,18 +287,18 @@ export default function ChatApp() {
                 start={item.start}
                 durationMinutes={item.durationMinutes}
                 email={item.email}
-                tzLabel={config.tz_label}
+                tzLabel={cfg.tz_label}
                 disabled={busy}
                 lang={lang}
                 onBook={() => {
                   resolveWidget(
                     item.id,
-                    lang === 'ru' ? 'Забронировано' : 'Booked',
+                    tl('summary.booked'),
                   );
                   void send('[widget] Confirmed — book the meeting.', null);
                 }}
                 onDecline={() => {
-                  resolveWidget(item.id, lang === 'ru' ? 'Отклонено' : 'Declined');
+                  resolveWidget(item.id, tl('summary.declined'));
                   void send(
                     '[widget] I declined the booking confirmation.',
                     null,
@@ -351,47 +329,65 @@ export default function ChatApp() {
     void send(text);
   }
 
-  const avatarUrl = config.avatar ?? '/my-avatar.webp';
+  const cfg = config ?? FALLBACK_CONFIG;
+  const avatarUrl = cfg.avatar ?? '/my-avatar.webp';
   const canSend = Boolean(draft.trim()) && !busy;
 
-  const title = pickText(config.title, config.title_ru);
-  const subtitle = pickText(config.subtitle, config.subtitle_ru);
-  const greeting = pickText(config.greeting, config.greeting_ru);
+  const title = pickText(cfg.title, cfg.title_ru);
+  const subtitle = pickText(cfg.subtitle, cfg.subtitle_ru);
+  const greeting = pickText(cfg.greeting, cfg.greeting_ru);
 
-  const chips = config.buttons.map((b, i) => {
-    const label = pickText(b.label, b.label_ru);
-    return b.kind === 'link' ? (
-      <a key={i} className="chip" href={b.url} target="_blank" rel="noreferrer">
-        {label}
-      </a>
-    ) : (
-      <button
-        key={i}
-        type="button"
-        className="chip"
-        onClick={() => void send(label)}
-      >
-        {label}
-      </button>
-    );
-  });
+  // skeleton pills until the admin config arrives
+  const chips = config
+    ? config.buttons.map((b, i) => {
+        const label = pickText(b.label, b.label_ru);
+        return b.kind === 'link' ? (
+          <a key={i} className="chip" href={b.url} target="_blank" rel="noreferrer">
+            {label}
+          </a>
+        ) : (
+          <button
+            key={i}
+            type="button"
+            className="chip"
+            onClick={() => void send(label)}
+          >
+            {label}
+          </button>
+        );
+      })
+    : Array.from({ length: 4 }, (_, i) => (
+        <span key={i} className="skel skel-chip" />
+      ));
+
+  const placeholders = t('chat.placeholders', { returnObjects: true }) as string[];
 
   return (
     <div className="app">
       <div className="scroll" ref={chatRef}>
         {!started ? (
-          <div className="hero">
-            <div className="hero-avatar-wrap">
-              <div className="hero-avatar-glow" />
-              <div
-                className="avatar-lg"
-                style={{ backgroundImage: `url("${avatarUrl}")` }}
-              />
+          config ? (
+            <div className="hero">
+              <div className="hero-avatar-wrap">
+                <div className="hero-avatar-glow" />
+                <div
+                  className="avatar-lg"
+                  style={{ backgroundImage: `url("${avatarUrl}")` }}
+                />
+              </div>
+              <h1 className="hero-title">{title}</h1>
+              <div className="hero-sub">{subtitle}</div>
+              <p className="hero-intro">{greeting}</p>
             </div>
-            <h1 className="hero-title">{title}</h1>
-            <div className="hero-sub">{subtitle}</div>
-            <p className="hero-intro">{greeting}</p>
-          </div>
+          ) : (
+            <div className="hero">
+              <div className="skel skel-avatar" />
+              <div className="skel skel-title" />
+              <div className="skel skel-sub" />
+              <div className="skel skel-line" />
+              <div className="skel skel-line short" />
+            </div>
+          )
         ) : (
           <div className="thread">
             <div className="thread-intro">
@@ -418,10 +414,8 @@ export default function ChatApp() {
             value={draft}
             placeholder={
               started
-                ? LOCALE === 'ru'
-                  ? 'Напишите агенту…'
-                  : 'Message the agent…'
-                : PLACEHOLDERS[LOCALE][placeholderIdx % PLACEHOLDERS[LOCALE].length]
+                ? t('chat.inputPlaceholder')
+                : placeholders[placeholderIdx % placeholders.length]
             }
             onChange={(e) => setDraft(e.target.value)}
             onFocus={() => setFocus(true)}
@@ -460,7 +454,9 @@ export default function ChatApp() {
 }
 
 function TypingIndicator({ lang }: { lang: 'en' | 'ru' }) {
-  const phrases = PHRASES[lang];
+  const phrases = i18n.getFixedT(lang)('chat.typing', {
+    returnObjects: true,
+  }) as string[];
   const [idx, setIdx] = useState(() => Math.floor(Math.random() * phrases.length));
   const [visible, setVisible] = useState(true);
 

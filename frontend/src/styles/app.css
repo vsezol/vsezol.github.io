@@ -812,3 +812,62 @@ textarea::placeholder {
 .spacer.chatting {
   height: 14px;
 }
+
+/* ---------- loading skeleton (before the admin config arrives) ---------- */
+.skel {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.11) 50%,
+    rgba(255, 255, 255, 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: skelShimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+  flex: none;
+}
+
+@keyframes skelShimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.skel-avatar {
+  width: 152px;
+  height: 152px;
+  border-radius: 44px;
+  margin-bottom: 26px;
+}
+
+.skel-title {
+  width: 240px;
+  height: 30px;
+  margin-bottom: 12px;
+}
+
+.skel-sub {
+  width: 190px;
+  height: 14px;
+  margin-bottom: 22px;
+}
+
+.skel-line {
+  width: 320px;
+  max-width: 80%;
+  height: 13px;
+  margin-bottom: 9px;
+}
+
+.skel-line.short {
+  width: 240px;
+}
+
+.skel-chip {
+  width: 108px;
+  height: 31px;
+  border-radius: 999px;
+}
