@@ -11,6 +11,8 @@ class ChatRequest(BaseModel):
     client_locale: str | None = None
     # Server-side session to resume; a new one is created when absent/expired
     session_id: str | None = Field(default=None, max_length=64)
+    # Cloudflare Turnstile token proving the request came from a real browser
+    turnstile_token: str | None = Field(default=None, max_length=4096)
 
 
 class TextReply(BaseModel):

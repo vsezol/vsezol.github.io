@@ -7,11 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from pydantic_ai.exceptions import ModelHTTPError
-from pydantic_ai.messages import (
-    ModelMessagesTypeAdapter,
-    ModelRequest,
-    UserPromptPart,
-)
+from pydantic_ai.messages import ModelMessagesTypeAdapter
 from pydantic_ai.usage import UsageLimits
 
 from .admin import router as admin_router
@@ -25,7 +21,9 @@ from .agent import (
     strip_widget_echo,
 )
 from .config import settings
+from .limits import llm_breaker
 from .rate_limit import RateLimiter
+from .security import client_ip, edge_secret_ok, turnstile_ok
 from .sessions import session_store
 from .schemas import (
     AskConfirmReply,
@@ -52,25 +50,40 @@ app.add_middleware(
 
 app.include_router(admin_router)
 
+# Coarse per-IP anti-flood over all /api/ paths.
 rate_limiter = RateLimiter(
     settings.rate_limit_requests, settings.rate_limit_window_seconds
 )
+# Chat messages per IP per hour (the visible "20/hour" cap).
+chat_hourly = RateLimiter(settings.messages_per_hour, 3600)
 
-LIMIT_REACHED_MESSAGE = (
-    "This conversation has reached its message limit — please refresh the "
-    "page to start a new one. 🙏\n\n"
-    "Лимит сообщений для этой беседы исчерпан — обновите страницу, чтобы "
-    "начать новую. 🙏"
+HOURLY_LIMIT_MESSAGE = (
+    "You've hit the hourly message limit — it resets within an hour. "
+    "Thanks for your patience! 🙏\n\n"
+    "Вы достигли часового лимита сообщений — он восстановится в течение "
+    "часа. Спасибо за терпение! 🙏"
+)
+
+BUSY_MESSAGE = (
+    "The agent is handling a lot of requests right now — please try again "
+    "in a few minutes. 🙏\n\n"
+    "Агент сейчас перегружен запросами — попробуйте, пожалуйста, через "
+    "несколько минут. 🙏"
+)
+
+DISABLED_MESSAGE = (
+    "The chat is temporarily unavailable. Please check back soon. 🙏\n\n"
+    "Чат временно недоступен. Загляните чуть позже. 🙏"
 )
 
 
 @app.middleware("http")
-async def rate_limit_middleware(request: Request, call_next):
+async def edge_and_flood_middleware(request: Request, call_next):
     if request.url.path.startswith("/api/"):
-        client_ip = request.headers.get(
-            "x-forwarded-for", request.client.host if request.client else "?"
-        ).split(",")[0].strip()
-        if not rate_limiter.allow(client_ip):
+        # reject anything that bypassed Cloudflare (once EDGE_SECRET is set)
+        if not edge_secret_ok(request):
+            return JSONResponse({"detail": "Forbidden"}, status_code=403)
+        if not rate_limiter.allow(client_ip(request)):
             return JSONResponse(
                 {"detail": "Too many requests, please slow down."},
                 status_code=429,
@@ -201,7 +214,22 @@ def _build_reply(
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest) -> ChatResponse:
+async def chat(req: ChatRequest, request: Request) -> ChatResponse:
+    if not settings.chat_enabled:
+        return ChatResponse(reply=TextReply(message=DISABLED_MESSAGE), history=[])
+
+    # Proof this came from a real browser (no-op until Turnstile is set up).
+    if not await turnstile_ok(request, req.turnstile_token):
+        raise HTTPException(status_code=403, detail="Verification required")
+
+    # 20 messages / IP / hour — no LLM call on exceed.
+    if not chat_hourly.allow(client_ip(request)):
+        return ChatResponse(
+            reply=TextReply(message=HOURLY_LIMIT_MESSAGE),
+            history=req.history or [],
+            session_id=req.session_id,
+        )
+
     history = None
     if req.history:
         if len(req.history) > settings.max_history_messages:
@@ -225,19 +253,14 @@ async def chat(req: ChatRequest) -> ChatResponse:
             logger.warning("Corrupt history in session %s, resetting", session.id)
             session.history = []
 
-    if history is not None:
-        user_turns = sum(
-            1
-            for m in history
-            if isinstance(m, ModelRequest)
-            and any(isinstance(p, UserPromptPart) for p in m.parts)
+    # Global circuit breaker: hard ceiling on LLM spend across all visitors.
+    if not llm_breaker.allow():
+        logger.warning("LLM circuit breaker tripped — refusing without a call")
+        return ChatResponse(
+            reply=TextReply(message=BUSY_MESSAGE),
+            history=req.history or [],
+            session_id=session.id,
         )
-        if user_turns >= settings.max_user_messages:
-            return ChatResponse(
-                reply=TextReply(message=LIMIT_REACHED_MESSAGE),
-                history=req.history or [],
-                session_id=session.id,
-            )
 
     deps = AgentDeps(
         client_timezone=_validate_timezone(req.client_timezone),
@@ -245,6 +268,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
     )
 
     result = None
+    llm_breaker.record()
     for attempt in range(1, AGENT_RUN_ATTEMPTS + 1):
         try:
             result = await agent.run(

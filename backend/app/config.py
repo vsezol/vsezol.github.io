@@ -34,13 +34,43 @@ class Settings(BaseSettings):
         "https://vsezol.github.io,http://localhost:5173"
     )
 
+    # Coarse per-IP anti-flood over all /api/ paths.
     rate_limit_requests: int = 30
-    rate_limit_window_seconds: int = 300
+    rate_limit_window_seconds: int = 60
     max_history_messages: int = 120
-    # Hard cap of visitor messages per conversation (token protection)
-    max_user_messages: int = 20
+    # Chat messages allowed per IP per hour (unlimited per conversation, but
+    # capped hourly so a spammer can't burn tokens). On exceed the visitor is
+    # told the limit resets within an hour — no LLM call is made.
+    messages_per_hour: int = 20
     # Sessions idle longer than this are dropped
     session_ttl_days: int = 7
+
+    # --- Abuse backstops (work even before Cloudflare is in front) ---
+    # Global circuit breaker: max agent.run calls across all visitors per
+    # hour. Over this the API replies "temporarily unavailable" WITHOUT
+    # calling the LLM — a hard ceiling on token spend.
+    global_llm_calls_per_hour: int = 500
+    # Global cap on real bookings per day (calendar-flood protection).
+    global_bookings_per_day: int = 20
+    # Max upcoming meetings a single visitor email may hold.
+    bookings_per_email: int = 2
+
+    # Instant kill switches (flip in Railway env, no redeploy needed).
+    chat_enabled: bool = True
+    booking_enabled: bool = True
+
+    # Cloudflare Turnstile secret — proves the request came from a real
+    # browser. Empty = verification disabled (no-op until CF is set up).
+    turnstile_secret: str = ""
+    # Shared secret Cloudflare injects as a header; when set, the backend
+    # rejects any request without it (blocks direct hits to the raw Railway
+    # domain that bypass Cloudflare). Empty = disabled.
+    edge_secret: str = ""
+    edge_secret_header: str = "x-edge-secret"
+
+    # Optional Telegram alerting on abuse spikes (empty = disabled).
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
 
     # Admin API auth (HTTP Basic; the admin UI lives in the site SPA at /#admin)
     admin_user: str = "admin"
