@@ -55,7 +55,14 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 20px 16px 110px;
+  padding: 20px 16px 24px;
+}
+
+/* Real spacer element — a flex-column scroll area ignores padding-bottom, so
+   this is what actually lets the last card's buttons clear the fixed save bar. */
+.adm-tailspace {
+  flex: none;
+  height: 140px;
 }
 
 .adm-head {
