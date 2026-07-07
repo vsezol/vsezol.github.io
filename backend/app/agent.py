@@ -12,6 +12,7 @@ from pydantic_ai.models.google import GoogleModelSettings
 from .admin_config import AgentConfig, store
 from .calendar_service import BookingResult, create_meeting, is_slot_free
 from .config import settings
+from .limits import booking_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -281,11 +282,30 @@ def book_meeting(
     Call this ONLY after the visitor approved the AskConfirm recap card.
     `start` must be ISO 8601 with a UTC offset.
     """
+    if not settings.booking_enabled:
+        return (
+            "BOOKING_DISABLED: booking is temporarily turned off. Apologize "
+            "and suggest the visitor try again later or reach out directly."
+        )
+
     visitor_email = visitor_email.strip()
     if not EMAIL_RE.match(visitor_email):
         raise ModelRetry(
             "That email address is invalid. Ask the visitor for a valid one "
             "using the AskEmail widget."
+        )
+
+    # Abuse backstop: hard ceilings on bookings, independent of the LLM.
+    limit_hit = booking_limiter.check(visitor_email)
+    if limit_hit == "PER_EMAIL_LIMIT":
+        return (
+            "PER_EMAIL_LIMIT: this email already has the maximum number of "
+            "upcoming meetings. Apologize and suggest reaching out directly."
+        )
+    if limit_hit == "GLOBAL_DAILY_LIMIT":
+        return (
+            "GLOBAL_LIMIT: the daily booking limit has been reached. "
+            "Apologize and ask the visitor to try again tomorrow."
         )
 
     if start.tzinfo is None:
@@ -316,6 +336,7 @@ def book_meeting(
         )
 
     booking = create_meeting(visitor_email, start, duration_minutes, topic)
+    booking_limiter.record(visitor_email)
     ctx.deps.booking = booking
     logger.info("Meeting booked for %s at %s", visitor_email, start.isoformat())
     return (

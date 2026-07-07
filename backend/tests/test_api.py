@@ -7,6 +7,13 @@ os.environ["ADMIN_PASSWORD"] = "test-admin-pass"
 os.environ["CONFIG_PATH"] = os.path.join(
     tempfile.mkdtemp(prefix="agent-test-"), "agent_config.json"
 )
+# Keep the shared in-process limiters out of the way of the suite; each
+# limit is exercised in its own test by swapping in a small limiter.
+os.environ["RATE_LIMIT_REQUESTS"] = "100000"
+os.environ["MESSAGES_PER_HOUR"] = "100000"
+os.environ["GLOBAL_LLM_CALLS_PER_HOUR"] = "100000"
+os.environ["GLOBAL_BOOKINGS_PER_DAY"] = "100000"
+os.environ["BOOKINGS_PER_EMAIL"] = "100000"
 
 from datetime import datetime, timedelta, timezone
 
@@ -17,6 +24,37 @@ from pydantic_ai.models.function import FunctionModel
 
 def _text_model(text: str) -> FunctionModel:
     return FunctionModel(lambda messages, info: ModelResponse(parts=[TextPart(text)]))
+
+
+def _book_then_speak():
+    """Scripted model: first turn calls book_meeting, then speaks the result."""
+    from zoneinfo import ZoneInfo
+
+    start = datetime.now(ZoneInfo("Europe/Moscow")).replace(
+        hour=12, minute=0, second=0, microsecond=0
+    ) + timedelta(days=1)
+    while start.weekday() > 4:
+        start += timedelta(days=1)
+    state = {"calls": 0}
+
+    def model(messages, info):
+        state["calls"] += 1
+        if state["calls"] == 1:
+            return ModelResponse(
+                parts=[
+                    ToolCallPart(
+                        "book_meeting",
+                        {
+                            "visitor_email": "visitor@example.com",
+                            "start": start.isoformat(),
+                            "duration_minutes": 30,
+                        },
+                    )
+                ]
+            )
+        return ModelResponse(parts=[TextPart("All set!")])
+
+    return model
 
 from app.agent import AgentDeps, AskConfirm, AskDateTime, AskEmail
 from app.agent import agent as booking_agent
@@ -306,24 +344,141 @@ def test_non_transient_error_fails_fast():
     assert calls["n"] == 1
 
 
-def test_message_limit():
-    from pydantic_ai.messages import (
-        ModelMessagesTypeAdapter,
-        ModelRequest,
-        UserPromptPart,
-    )
+def test_hourly_message_limit():
+    import app.main as main_mod
+    from app.rate_limit import RateLimiter
 
-    history = ModelMessagesTypeAdapter.dump_python(
-        [ModelRequest(parts=[UserPromptPart(content=f"msg {i}")]) for i in range(20)],
-        mode="json",
-    )
-    r = client.post(
-        "/api/chat",
-        json={"message": "one more", "history": history, "client_timezone": "UTC"},
-    )
-    assert r.status_code == 200
-    assert r.json()["reply"]["type"] == "text"
-    assert "limit" in r.json()["reply"]["message"].lower()
+    original = main_mod.chat_hourly
+    main_mod.chat_hourly = RateLimiter(1, 3600)
+    try:
+        with booking_agent.override(model=_text_model("hi")):
+            headers = {"cf-connecting-ip": "203.0.113.7"}
+            r1 = client.post(
+                "/api/chat",
+                json={"message": "one", "client_timezone": "UTC"},
+                headers=headers,
+            )
+            assert r1.status_code == 200
+            r2 = client.post(
+                "/api/chat",
+                json={"message": "two", "client_timezone": "UTC"},
+                headers=headers,
+            )
+            assert r2.status_code == 200
+            assert "час" in r2.json()["reply"]["message"]  # hourly reset text
+
+            # a different IP is not throttled
+            r3 = client.post(
+                "/api/chat",
+                json={"message": "three", "client_timezone": "UTC"},
+                headers={"cf-connecting-ip": "203.0.113.8"},
+            )
+            assert "час" not in r3.json()["reply"]["message"]
+    finally:
+        main_mod.chat_hourly = original
+
+
+def test_llm_circuit_breaker():
+    import app.main as main_mod
+    from app.limits import SlidingCounter
+
+    original = main_mod.llm_breaker
+    main_mod.llm_breaker = SlidingCounter(0, 3600)  # allow() always False
+    try:
+        called = {"n": 0}
+
+        def model(messages, info):
+            called["n"] += 1
+            return ModelResponse(parts=[TextPart("should not run")])
+
+        with booking_agent.override(model=FunctionModel(model)):
+            r = client.post(
+                "/api/chat",
+                json={"message": "hi", "client_timezone": "UTC"},
+                headers={"cf-connecting-ip": "203.0.113.9"},
+            )
+        assert r.status_code == 200
+        assert "перегружен" in r.json()["reply"]["message"]
+        assert called["n"] == 0  # LLM never invoked
+    finally:
+        main_mod.llm_breaker = original
+
+
+def test_chat_kill_switch():
+    from app.config import settings
+
+    settings.chat_enabled = False
+    try:
+        r = client.post("/api/chat", json={"message": "hi", "client_timezone": "UTC"})
+        assert r.status_code == 200
+        assert "недоступен" in r.json()["reply"]["message"]
+    finally:
+        settings.chat_enabled = True
+
+
+def test_edge_secret_rejects_non_cloudflare():
+    from app.config import settings
+
+    settings.edge_secret = "s3cr3t"
+    try:
+        r = client.post("/api/chat", json={"message": "hi", "client_timezone": "UTC"})
+        assert r.status_code == 403
+        with booking_agent.override(model=_text_model("ok")):
+            r2 = client.post(
+                "/api/chat",
+                json={"message": "hi", "client_timezone": "UTC"},
+                headers={settings.edge_secret_header: "s3cr3t"},
+            )
+        assert r2.status_code == 200
+    finally:
+        settings.edge_secret = ""
+
+
+def test_turnstile_required_when_configured():
+    from app.config import settings
+
+    settings.turnstile_secret = "ts-secret"
+    try:
+        r = client.post("/api/chat", json={"message": "hi", "client_timezone": "UTC"})
+        assert r.status_code == 403  # no token supplied
+    finally:
+        settings.turnstile_secret = ""
+
+
+def test_booking_kill_switch_blocks_booking():
+    from app.config import settings
+
+    settings.booking_enabled = False
+    try:
+        with booking_agent.override(model=FunctionModel(_book_then_speak())):
+            r = client.post(
+                "/api/chat",
+                json={"message": "[widget] Confirmed", "client_timezone": "UTC"},
+                headers={"cf-connecting-ip": "203.0.113.20"},
+            )
+        assert r.status_code == 200
+        assert r.json()["reply"]["type"] != "booked"
+    finally:
+        settings.booking_enabled = True
+
+
+def test_global_booking_cap():
+    from app.limits import BookingLimiter
+
+    lim = BookingLimiter(per_day=1, per_email=99)
+    assert lim.check("a@b.co") is None
+    lim.record("a@b.co")
+    assert lim.check("c@d.co") == "GLOBAL_DAILY_LIMIT"
+
+
+def test_per_email_booking_cap():
+    from app.limits import BookingLimiter
+
+    lim = BookingLimiter(per_day=99, per_email=1)
+    assert lim.check("a@b.co") is None
+    lim.record("a@b.co")
+    assert lim.check("a@b.co") == "PER_EMAIL_LIMIT"
+    assert lim.check("other@b.co") is None  # per-email, not global
 
 
 def test_public_config():

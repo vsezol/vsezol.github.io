@@ -1,3 +1,4 @@
+import { getTurnstileToken } from './turnstile';
 import type { ChatResponse, SessionResponse, SiteConfig } from './types';
 
 const API_URL: string = import.meta.env.VITE_API_URL ?? '';
@@ -11,6 +12,7 @@ export async function sendChat(
   locale: string,
   sessionId: string | null,
 ): Promise<ChatResponse> {
+  const turnstileToken = await getTurnstileToken();
   const post = () =>
     fetch(`${API_URL}/api/chat`, {
       method: 'POST',
@@ -21,6 +23,7 @@ export async function sendChat(
         client_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         client_locale: locale,
         session_id: sessionId,
+        turnstile_token: turnstileToken,
       }),
     });
 
