@@ -611,6 +611,27 @@ def test_admin_config_roundtrip():
     assert client.put("/admin/api/config", json=bad, auth=auth).status_code == 422
 
 
+def test_spam_cleanup_endpoints():
+    auth = ("admin", "test-admin-pass")
+    # auth required
+    assert client.get("/admin/api/spam-meetings").status_code == 401
+    assert (
+        client.post("/admin/api/spam-meetings/delete", json={"days": 30}).status_code
+        == 401
+    )
+
+    # DEMO_MODE → no real calendar, so empty preview and nothing deleted
+    r = client.get("/admin/api/spam-meetings?days=30", auth=auth)
+    assert r.status_code == 200
+    assert r.json() == {"count": 0, "events": []}
+
+    d = client.post(
+        "/admin/api/spam-meetings/delete", json={"event_ids": ["x", "y"]}, auth=auth
+    )
+    assert d.status_code == 200
+    assert d.json() == {"deleted": 0}
+
+
 def test_demo_mode_booking():
     start = datetime.now(timezone.utc) + timedelta(days=1)
     booking = create_meeting("visitor@example.com", start, 30, None)
