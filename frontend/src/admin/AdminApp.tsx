@@ -460,6 +460,10 @@ export default function AdminApp() {
 
         {creds && <SpamCleanup creds={creds} />}
 
+        {/* tail spacer so the last card clears the fixed save bar (a flex
+            scroll column ignores padding-bottom) */}
+        <div className="adm-tailspace" aria-hidden="true" />
+
         <div className="adm-savebar">
           <div className="adm-savebar-in">
             <button type="button" className="adm-save" onClick={() => void save()}>
