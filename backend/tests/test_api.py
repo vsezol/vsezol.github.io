@@ -344,7 +344,7 @@ def test_non_transient_error_fails_fast():
     assert calls["n"] == 1
 
 
-def test_hourly_message_limit():
+def test_hourly_message_limit_and_localization():
     import app.main as main_mod
     from app.rate_limit import RateLimiter
 
@@ -352,20 +352,18 @@ def test_hourly_message_limit():
     main_mod.chat_hourly = RateLimiter(1, 3600)
     try:
         with booking_agent.override(model=_text_model("hi")):
-            headers = {"cf-connecting-ip": "203.0.113.7"}
+            ip = {"cf-connecting-ip": "203.0.113.7"}
             r1 = client.post(
-                "/api/chat",
-                json={"message": "one", "client_timezone": "UTC"},
-                headers=headers,
+                "/api/chat", json={"message": "one", "client_timezone": "UTC"}, headers=ip
             )
-            assert r1.status_code == 200
+            assert r1.status_code == 200 and "hourly" not in r1.json()["reply"]["message"]
+            # second (English) message over the limit → English text, no emoji
             r2 = client.post(
-                "/api/chat",
-                json={"message": "two", "client_timezone": "UTC"},
-                headers=headers,
+                "/api/chat", json={"message": "two", "client_timezone": "UTC"}, headers=ip
             )
-            assert r2.status_code == 200
-            assert "час" in r2.json()["reply"]["message"]  # hourly reset text
+            msg = r2.json()["reply"]["message"]
+            assert "hourly message limit" in msg
+            assert "🙏" not in msg and "час" not in msg
 
             # a different IP is not throttled
             r3 = client.post(
@@ -373,7 +371,55 @@ def test_hourly_message_limit():
                 json={"message": "three", "client_timezone": "UTC"},
                 headers={"cf-connecting-ip": "203.0.113.8"},
             )
-            assert "час" not in r3.json()["reply"]["message"]
+            assert "hourly message limit" not in r3.json()["reply"]["message"]
+
+            # a Russian over-limit message → Russian text
+            r4 = client.post(
+                "/api/chat", json={"message": "привет", "client_timezone": "UTC"}, headers=ip
+            )
+            rmsg = r4.json()["reply"]["message"]
+            assert "часового лимита" in rmsg and "🙏" not in rmsg
+    finally:
+        main_mod.chat_hourly = original
+
+
+def test_hourly_limit_is_per_session_not_ip():
+    """Visitors sharing a carrier/CGNAT IP must not drain each other's budget,
+    and widget events don't count."""
+    import app.main as main_mod
+    from app.rate_limit import RateLimiter
+
+    original = main_mod.chat_hourly
+    main_mod.chat_hourly = RateLimiter(1, 3600)
+    try:
+        with booking_agent.override(model=_text_model("hi")):
+            ip = {"cf-connecting-ip": "198.51.100.5"}  # same IP for everyone
+            a = client.post(
+                "/api/chat",
+                json={"message": "hi", "session_id": "a" * 32, "client_timezone": "UTC"},
+                headers=ip,
+            )
+            b = client.post(
+                "/api/chat",
+                json={"message": "hi", "session_id": "b" * 32, "client_timezone": "UTC"},
+                headers=ip,
+            )
+            # different sessions → neither throttled despite the shared IP
+            assert "hourly" not in a.json()["reply"]["message"]
+            assert "hourly" not in b.json()["reply"]["message"]
+
+            # widget events never count toward the cap
+            for _ in range(3):
+                w = client.post(
+                    "/api/chat",
+                    json={
+                        "message": "[widget] Confirmed — book the meeting.",
+                        "session_id": "a" * 32,
+                        "client_timezone": "UTC",
+                    },
+                    headers=ip,
+                )
+                assert "hourly" not in w.json()["reply"]["message"]
     finally:
         main_mod.chat_hourly = original
 
@@ -398,7 +444,8 @@ def test_llm_circuit_breaker():
                 headers={"cf-connecting-ip": "203.0.113.9"},
             )
         assert r.status_code == 200
-        assert "перегружен" in r.json()["reply"]["message"]
+        msg = r.json()["reply"]["message"]
+        assert "few minutes" in msg and "🙏" not in msg  # English, no emoji
         assert called["n"] == 0  # LLM never invoked
     finally:
         main_mod.llm_breaker = original
@@ -411,7 +458,12 @@ def test_chat_kill_switch():
     try:
         r = client.post("/api/chat", json={"message": "hi", "client_timezone": "UTC"})
         assert r.status_code == 200
-        assert "недоступен" in r.json()["reply"]["message"]
+        assert "temporarily unavailable" in r.json()["reply"]["message"]
+        # Russian visitor gets the Russian variant
+        r2 = client.post(
+            "/api/chat", json={"message": "привет", "client_timezone": "UTC"}
+        )
+        assert "недоступен" in r2.json()["reply"]["message"]
     finally:
         settings.chat_enabled = True
 
