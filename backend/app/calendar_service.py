@@ -14,6 +14,11 @@ logger = logging.getLogger(__name__)
 
 TOKEN_URI = "https://oauth2.googleapis.com/token"
 
+# Unique marker written into every agent-created event's description, used to
+# find (and only ever delete) meetings this agent booked — never hand-made
+# calendar events.
+AGENT_MARKER = "Meeting booked via the AI agent"
+
 
 @dataclass
 class BookingResult:
@@ -76,6 +81,62 @@ def is_slot_free(start: datetime, duration_minutes: int) -> bool:
         if calendar.get("busy"):
             return False
     return True
+
+
+def list_agent_events(time_min: datetime, time_max: datetime) -> list[dict]:
+    """List events the agent created (by description marker) in a window.
+
+    Returns [{id, summary, start}]. Empty in DEMO_MODE (no real calendar).
+    """
+    if settings.demo_mode:
+        return []
+    service = _calendar_service()
+    out: list[dict] = []
+    page_token = None
+    while True:
+        resp = (
+            service.events()
+            .list(
+                calendarId="primary",
+                timeMin=time_min.isoformat(),
+                timeMax=time_max.isoformat(),
+                singleEvents=True,
+                showDeleted=False,
+                maxResults=250,
+                pageToken=page_token,
+            )
+            .execute()
+        )
+        for ev in resp.get("items", []):
+            if AGENT_MARKER in (ev.get("description") or ""):
+                out.append(
+                    {
+                        "id": ev.get("id"),
+                        "summary": ev.get("summary", ""),
+                        "start": ev.get("start", {}).get("dateTime", ""),
+                    }
+                )
+        page_token = resp.get("nextPageToken")
+        if not page_token:
+            break
+    return out
+
+
+def delete_events(event_ids: list[str]) -> int:
+    """Delete events by id (no cancellation emails). Returns the count deleted."""
+    if settings.demo_mode or not event_ids:
+        return 0
+    service = _calendar_service()
+    deleted = 0
+    for eid in event_ids:
+        try:
+            service.events().delete(
+                calendarId="primary", eventId=eid, sendUpdates="none"
+            ).execute()
+            deleted += 1
+        except HttpError as exc:
+            logger.warning("Failed to delete event %s: %s", eid, exc)
+    return deleted
 
 
 def create_meeting(

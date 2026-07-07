@@ -458,6 +458,8 @@ export default function AdminApp() {
           />
         </div>
 
+        {creds && <SpamCleanup creds={creds} />}
+
         <div className="adm-savebar">
           <div className="adm-savebar-in">
             <button type="button" className="adm-save" onClick={() => void save()}>
@@ -536,6 +538,89 @@ function Login({
           ← Back to chat
         </a>
       </div>
+    </div>
+  );
+}
+
+interface SpamEvent {
+  id: string;
+  summary: string;
+  start: string;
+}
+
+function SpamCleanup({ creds }: { creds: string }) {
+  const [events, setEvents] = useState<SpamEvent[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  async function preview() {
+    setBusy(true);
+    setMsg('');
+    try {
+      const res = await fetch(`${API_URL}/admin/api/spam-meetings?days=120`, {
+        headers: authHeader(creds),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setEvents(data.events);
+      setMsg(`Found ${data.count} agent-created meeting(s) in the next 120 days.`);
+    } catch (err) {
+      setMsg(`Preview failed: ${err instanceof Error ? err.message : err}`);
+    }
+    setBusy(false);
+  }
+
+  async function remove() {
+    if (!events?.length) return;
+    if (!confirm(`Delete ${events.length} meeting(s)? This cannot be undone.`)) return;
+    setBusy(true);
+    setMsg('');
+    try {
+      const res = await fetch(`${API_URL}/admin/api/spam-meetings/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader(creds) },
+        body: JSON.stringify({ event_ids: events.map((e) => e.id) }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setEvents([]);
+      setMsg(`Deleted ${data.deleted} meeting(s).`);
+    } catch (err) {
+      setMsg(`Delete failed: ${err instanceof Error ? err.message : err}`);
+    }
+    setBusy(false);
+  }
+
+  return (
+    <div className="adm-card">
+      <div className="adm-label">Clean up agent-created meetings</div>
+      <div className="adm-hint">
+        Deletes only meetings this agent booked (matched by their marker) in the
+        next 120 days — never your hand-made events. Cancellation emails are not
+        sent. Preview first.
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button type="button" className="adm-btn-muted" disabled={busy} onClick={() => void preview()}>
+          {busy ? 'Working…' : 'Preview'}
+        </button>
+        {!!events?.length && (
+          <button type="button" className="adm-btn-danger" disabled={busy} onClick={() => void remove()}>
+            Delete {events.length} meeting(s)
+          </button>
+        )}
+      </div>
+      {msg && <div className="adm-hint" style={{ marginTop: 4 }}>{msg}</div>}
+      {!!events?.length && (
+        <div className="adm-spam-list">
+          {events.slice(0, 40).map((e) => (
+            <div key={e.id} className="adm-spam-row">
+              <span>{e.start ? e.start.replace('T', ' ').slice(0, 16) : '—'}</span>
+              <span>{e.summary || '(no title)'}</span>
+            </div>
+          ))}
+          {events.length > 40 && <div className="adm-hint">…and {events.length - 40} more</div>}
+        </div>
+      )}
     </div>
   );
 }
