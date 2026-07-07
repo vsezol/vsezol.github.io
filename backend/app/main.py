@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, HTTPException, Request
@@ -57,24 +58,46 @@ rate_limiter = RateLimiter(
 # Chat messages per IP per hour (the visible "20/hour" cap).
 chat_hourly = RateLimiter(settings.messages_per_hour, 3600)
 
-HOURLY_LIMIT_MESSAGE = (
-    "You've hit the hourly message limit — it resets within an hour. "
-    "Thanks for your patience! 🙏\n\n"
-    "Вы достигли часового лимита сообщений — он восстановится в течение "
-    "часа. Спасибо за терпение! 🙏"
-)
+# System messages that bypass the LLM. Kept per-language (shown in the
+# language the visitor is writing in) and without emoji.
+HOURLY_LIMIT_MESSAGE = {
+    "en": (
+        "You've hit the hourly message limit — it resets within an hour. "
+        "Thanks for your patience."
+    ),
+    "ru": (
+        "Вы достигли часового лимита сообщений — он восстановится в течение "
+        "часа. Спасибо за терпение."
+    ),
+}
 
-BUSY_MESSAGE = (
-    "The agent is handling a lot of requests right now — please try again "
-    "in a few minutes. 🙏\n\n"
-    "Агент сейчас перегружен запросами — попробуйте, пожалуйста, через "
-    "несколько минут. 🙏"
-)
+BUSY_MESSAGE = {
+    "en": (
+        "The agent is handling a lot of requests right now — please try "
+        "again in a few minutes."
+    ),
+    "ru": (
+        "Агент сейчас перегружен запросами — попробуйте, пожалуйста, через "
+        "несколько минут."
+    ),
+}
 
-DISABLED_MESSAGE = (
-    "The chat is temporarily unavailable. Please check back soon. 🙏\n\n"
-    "Чат временно недоступен. Загляните чуть позже. 🙏"
-)
+DISABLED_MESSAGE = {
+    "en": "The chat is temporarily unavailable. Please check back soon.",
+    "ru": "Чат временно недоступен. Загляните чуть позже.",
+}
+
+_CYRILLIC = re.compile(r"[а-яё]", re.IGNORECASE)
+
+
+def _lang(message: str, client_locale: str | None) -> str:
+    """Language for system messages: what the visitor is writing in, falling
+    back to their browser locale."""
+    if _CYRILLIC.search(message or ""):
+        return "ru"
+    if (client_locale or "").lower().startswith("ru"):
+        return "ru"
+    return "en"
 
 
 @app.middleware("http")
@@ -215,17 +238,23 @@ def _build_reply(
 
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest, request: Request) -> ChatResponse:
+    lang = _lang(req.message, req.client_locale)
+
     if not settings.chat_enabled:
-        return ChatResponse(reply=TextReply(message=DISABLED_MESSAGE), history=[])
+        return ChatResponse(reply=TextReply(message=DISABLED_MESSAGE[lang]), history=[])
 
     # Proof this came from a real browser (no-op until Turnstile is set up).
     if not await turnstile_ok(request, req.turnstile_token):
         raise HTTPException(status_code=403, detail="Verification required")
 
-    # 20 messages / IP / hour — no LLM call on exceed.
-    if not chat_hourly.allow(client_ip(request)):
+    # Hourly cap on *typed* messages, keyed per conversation (session) — not
+    # per IP, so visitors sharing a carrier/CGNAT address don't drain each
+    # other's budget. Widget events ([widget] ...) are one user action mid-
+    # booking, so they don't count. No LLM call on exceed.
+    rate_key = req.session_id or client_ip(request)
+    if not req.message.startswith("[widget]") and not chat_hourly.allow(rate_key):
         return ChatResponse(
-            reply=TextReply(message=HOURLY_LIMIT_MESSAGE),
+            reply=TextReply(message=HOURLY_LIMIT_MESSAGE[lang]),
             history=req.history or [],
             session_id=req.session_id,
         )
@@ -257,7 +286,7 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
     if not llm_breaker.allow():
         logger.warning("LLM circuit breaker tripped — refusing without a call")
         return ChatResponse(
-            reply=TextReply(message=BUSY_MESSAGE),
+            reply=TextReply(message=BUSY_MESSAGE[lang]),
             history=req.history or [],
             session_id=session.id,
         )
