@@ -38,12 +38,21 @@ function loadScript(): Promise<void> {
 async function ensureWidget(): Promise<void> {
   await loadScript();
   if (widgetId != null || !window.turnstile) return;
+  // Renderable container (NOT display:none) so that, on the rare occasion
+  // Cloudflare needs interaction, the challenge can actually show instead of
+  // silently failing and locking the visitor out. `interaction-only` keeps it
+  // invisible whenever no interaction is required (the common case).
   const holder = document.createElement('div');
-  holder.style.display = 'none';
+  holder.style.position = 'fixed';
+  holder.style.bottom = '16px';
+  holder.style.left = '50%';
+  holder.style.transform = 'translateX(-50%)';
+  holder.style.zIndex = '2147483647';
   document.body.appendChild(holder);
   widgetId = window.turnstile.render(holder, {
     sitekey: SITE_KEY,
     execution: 'execute', // token minted on demand via execute()
+    appearance: 'interaction-only', // only visible if a challenge is required
     callback: (token: string) => {
       pending?.(token);
       pending = null;
