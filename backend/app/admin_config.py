@@ -147,3 +147,32 @@ class ConfigStore:
 
 
 store = ConfigStore(_resolve_path())
+
+
+def _migrate_persisted_config() -> None:
+    """One-time fixups for a config already saved on the volume.
+
+    Employer renamed OTP Group → TaxDome: a persisted config that still
+    carries the old default subtitle is updated in place. No-op when there is
+    no saved file (defaults already carry the new value) or once corrected.
+    """
+    try:
+        cfg = store.load()
+    except Exception:
+        return
+    changed = False
+    if cfg.subtitle == "Senior AI Engineer at OTP Group":
+        cfg.subtitle = "Senior AI Engineer at TaxDome"
+        changed = True
+    if cfg.subtitle_ru == "Senior AI Engineer в OTP Group":
+        cfg.subtitle_ru = "Senior AI Engineer в TaxDome"
+        changed = True
+    if changed:
+        try:
+            store.save(cfg)
+            logger.info("Migrated persisted subtitle to TaxDome")
+        except OSError:
+            logger.warning("Could not persist subtitle migration")
+
+
+_migrate_persisted_config()
