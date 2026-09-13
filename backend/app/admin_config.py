@@ -72,12 +72,12 @@ def _default_schedule() -> list[DayCfg]:
 class AgentConfig(BaseModel):
     title: str = Field(default="Hi, I'm Vsevolod", max_length=60)
     subtitle: str = Field(
-        default="Senior AI Engineer at OTP Group", max_length=100
+        default="Senior AI Engineer at TaxDome", max_length=100
     )
     # Russian variants shown when the browser locale is Russian
     title_ru: str = Field(default="Привет, я Всеволод", max_length=60)
     subtitle_ru: str = Field(
-        default="Senior AI Engineer в OTP Group", max_length=100
+        default="Senior AI Engineer в TaxDome", max_length=100
     )
     # Data URL (small JPEG) or None for the built-in photo
     avatar: str | None = Field(default=None, max_length=300_000)
