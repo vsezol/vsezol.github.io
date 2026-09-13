@@ -20,9 +20,9 @@ import SuccessCard from './widgets/SuccessCard';
 // keeps a skeleton until the admin-managed texts arrive
 const FALLBACK_CONFIG: SiteConfig = {
   title: "Hi, I'm Vsevolod",
-  subtitle: 'Senior AI Engineer at OTP Group',
+  subtitle: 'Senior AI Engineer at TaxDome',
   title_ru: 'Привет, я Всеволод',
-  subtitle_ru: 'Senior AI Engineer в OTP Group',
+  subtitle_ru: 'Senior AI Engineer в TaxDome',
   avatar: null,
   greeting:
     'This is my AI agent — it can tell you about me\nand book a meeting with me.',
